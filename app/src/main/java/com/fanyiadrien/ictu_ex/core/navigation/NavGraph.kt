@@ -32,7 +32,7 @@ fun NavGraph(
         composable(route = Screen.Onboarding.route) {
             // TODO(@teammate): Replace with your OnboardingScreen()
             // When user taps "Get Started":
-            //   navController.navigate(Screen.CheckStatus.route)
+//               navController.navigate(Screen.CheckStatus.route)
         }
 
         composable(route = Screen.CheckStatus.route) {
@@ -90,6 +90,9 @@ fun NavGraph(
 
         composable(route = Screen.Profile.route) {
             // TODO: ProfileScreen()
+        }
+        composable(route = Screen.Settings.route) {
+        //TODO SettingScreen()
         }
     }
 }

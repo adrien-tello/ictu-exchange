@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.googleDevtoolsKsp)
-    alias(libs.plugins.googleServices)
+    // alias(libs.plugins.googleServices)
 
 }
 
@@ -60,6 +60,7 @@ dependencies {
     // Offline-First Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.androidx.fragment)
     ksp(libs.room.compiler) // Using KSP here
 
     // QR Code Scanning

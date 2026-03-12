@@ -6,6 +6,9 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
+import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
+import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
 
 /**
  * Central NavGraph for ICTU-Ex.
@@ -61,12 +64,7 @@ fun NavGraph(
         }
 
         composable(route = Screen.SignIn.route) {
-            // TODO(@teammate): Replace with your SignInScreen()
-            // After successful login:
-            //   navController.navigate(Screen.Home.route) {
-            //       popUpTo(Screen.Onboarding.route) { inclusive = true }  ← clears back stack
-            //   }
-            // "Don't have an account?" → navController.navigate(Screen.CheckStatus.route)
+            SignInScreen(navController = navController)
         }
 
         // ── Main App ──────────────────────────────────────────────────────────

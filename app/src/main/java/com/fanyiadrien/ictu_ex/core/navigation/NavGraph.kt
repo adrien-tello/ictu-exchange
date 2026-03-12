@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
+import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
 
 /**
  * Central NavGraph for ICTU-Ex.
@@ -33,19 +34,11 @@ fun NavGraph(
 
         // ── Onboarding ────────────────────────────────────────────────────────
         composable(route = Screen.Onboarding.route) {
-            // TODO(@teammate): Replace with your OnboardingScreen()
-            // When user taps "Get Started":
-//               navController.navigate(Screen.CheckStatus.route)
+            OnboardingScreen(navController = navController)
         }
 
         composable(route = Screen.CheckStatus.route) {
-            // TODO(@teammate): Replace with your CheckStatusScreen()
-            // When user picks SELLER:
-            //   navController.navigate(Screen.SignUp.createRoute("SELLER"))
-            // When user picks BUYER:
-            //   navController.navigate(Screen.SignUp.createRoute("BUYER"))
-            // When user taps "Already have an account?":
-            //   navController.navigate(Screen.SignIn.route)
+            CheckStatusScreen(navController = navController)
         }
 
         // ── Auth ──────────────────────────────────────────────────────────────
@@ -56,11 +49,7 @@ fun NavGraph(
             )
         ) { backStackEntry ->
             val userType = backStackEntry.arguments?.getString("userType") ?: "BUYER"
-            // TODO(@teammate): Replace with your SignUpScreen(userType = userType)
-            // After successful signup:
-            //   navController.navigate(Screen.Home.route) {
-            //       popUpTo(Screen.Onboarding.route) { inclusive = true }  ← clears back stack
-            //   }
+            SignUpScreen(navController = navController, userType = userType)
         }
 
         composable(route = Screen.SignIn.route) {

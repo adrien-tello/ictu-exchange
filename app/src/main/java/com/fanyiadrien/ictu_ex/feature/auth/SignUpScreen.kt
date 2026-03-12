@@ -84,7 +84,7 @@ fun SignUpScreen(
 
             // Title
             Text(
-                text = "Join ICTU-Ex",
+                text = "Join ICTU-Exchange",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
@@ -112,7 +112,7 @@ fun SignUpScreen(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email") },
-                placeholder = { Text("student@ictu.edu.cm") },
+                placeholder = { Text("student@ictuniversity.edu.cm") },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next

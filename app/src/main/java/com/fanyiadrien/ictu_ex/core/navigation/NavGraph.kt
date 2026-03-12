@@ -1,5 +1,6 @@
 package com.fanyiadrien.ictu_ex.core.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -9,6 +10,11 @@ import androidx.navigation.navArgument
 import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
+import com.fanyiadrien.ictu_ex.feature.home.HomeScreen
+import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
+import com.google.firebase.auth.FirebaseAuth
+
+private const val TAG = "ICTU_NavGraph"
 
 /**
  * Central NavGraph for ICTU-Ex.
@@ -24,7 +30,8 @@ import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    startDestination: String = Screen.Onboarding.route
+    startDestination: String = Screen.Onboarding.route,
+    auth: FirebaseAuth
 ) {
     NavHost(
         navController    = navController,
@@ -33,19 +40,13 @@ fun NavGraph(
 
         // ── Onboarding ────────────────────────────────────────────────────────
         composable(route = Screen.Onboarding.route) {
-            // TODO(@teammate): Replace with your OnboardingScreen()
-            // When user taps "Get Started":
-//               navController.navigate(Screen.CheckStatus.route)
+            Log.d(TAG, "Entering route: ${Screen.Onboarding.route}")
+            OnboardingScreen(navController = navController)
         }
 
         composable(route = Screen.CheckStatus.route) {
-            // TODO(@teammate): Replace with your CheckStatusScreen()
-            // When user picks SELLER:
-            //   navController.navigate(Screen.SignUp.createRoute("SELLER"))
-            // When user picks BUYER:
-            //   navController.navigate(Screen.SignUp.createRoute("BUYER"))
-            // When user taps "Already have an account?":
-            //   navController.navigate(Screen.SignIn.route)
+            Log.d(TAG, "Entering route: ${Screen.CheckStatus.route}")
+            CheckStatusScreen(navController = navController)
         }
 
         // ── Auth ──────────────────────────────────────────────────────────────
@@ -56,20 +57,19 @@ fun NavGraph(
             )
         ) { backStackEntry ->
             val userType = backStackEntry.arguments?.getString("userType") ?: "BUYER"
-            // TODO(@teammate): Replace with your SignUpScreen(userType = userType)
-            // After successful signup:
-            //   navController.navigate(Screen.Home.route) {
-            //       popUpTo(Screen.Onboarding.route) { inclusive = true }  ← clears back stack
-            //   }
+            Log.d(TAG, "Entering route: sign_up with userType=$userType")
+            SignUpScreen(navController = navController, userType = userType)
         }
 
         composable(route = Screen.SignIn.route) {
+            Log.d(TAG, "Entering route: ${Screen.SignIn.route}")
             SignInScreen(navController = navController)
         }
 
         // ── Main App ──────────────────────────────────────────────────────────
         composable(route = Screen.Home.route) {
-            // TODO: HomeScreen()
+            Log.d(TAG, "Entering route: ${Screen.Home.route}")
+            HomeScreen(auth = auth)
         }
 
         composable(

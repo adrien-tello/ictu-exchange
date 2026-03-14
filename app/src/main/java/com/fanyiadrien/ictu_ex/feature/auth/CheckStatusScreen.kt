@@ -1,11 +1,13 @@
 package com.fanyiadrien.ictu_ex.feature.auth
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,7 +24,6 @@ private const val TAG = "ICTU_CheckStatus"
 fun CheckStatusScreen(navController: NavController) {
     Log.d(TAG, "CheckStatusScreen composed")
 
-    // ── Fix: explicit background ────────────────────────────────────────────
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
@@ -35,11 +36,11 @@ fun CheckStatusScreen(navController: NavController) {
             verticalArrangement = Arrangement.Center
         ) {
 
-            Icon(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+            // Changed Icon to Image to show original colors, or use Icon with tint = Color.Unspecified
+            Image(
+                painter = painterResource(id = R.drawable.check),
                 contentDescription = "ICTU-Ex Logo",
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary
+                modifier = Modifier.size(80.dp)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -70,16 +71,10 @@ fun CheckStatusScreen(navController: NavController) {
                     "Earn money from unused items",
                     "Connect with verified ICTU students"
                 ),
-                iconRes = R.drawable.ic_launcher_foreground,
-                iconTint = MaterialTheme.colorScheme.tertiary,
+                iconRes = R.drawable.price_tag,
                 onClick = {
-                    Log.d(TAG, "Seller card clicked → navigating to ${Screen.SignUp.createRoute("SELLER")}")
-                    try {
-                        navController.navigate(Screen.SignUp.createRoute("SELLER"))
-                        Log.d(TAG, "navigate(SELLER) called successfully")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "CRASH navigating to SignUp(SELLER)", e)
-                    }
+                    Log.d(TAG, "Seller card clicked")
+                    navController.navigate(Screen.SignUp.createRoute("SELLER"))
                 }
             )
 
@@ -93,16 +88,10 @@ fun CheckStatusScreen(navController: NavController) {
                     "Save money on study materials",
                     "Secure transactions with QR verification"
                 ),
-                iconRes = R.drawable.ic_launcher_foreground,
-                iconTint = MaterialTheme.colorScheme.primary,
+                iconRes = R.drawable.checklist,
                 onClick = {
-                    Log.d(TAG, "Buyer card clicked → navigating to ${Screen.SignUp.createRoute("BUYER")}")
-                    try {
-                        navController.navigate(Screen.SignUp.createRoute("BUYER"))
-                        Log.d(TAG, "navigate(BUYER) called successfully")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "CRASH navigating to SignUp(BUYER)", e)
-                    }
+                    Log.d(TAG, "Buyer card clicked")
+                    navController.navigate(Screen.SignUp.createRoute("BUYER"))
                 }
             )
 
@@ -118,13 +107,7 @@ fun CheckStatusScreen(navController: NavController) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 TextButton(onClick = {
-                    Log.d(TAG, "Sign In link clicked → navigating to ${Screen.SignIn.route}")
-                    try {
-                        navController.navigate(Screen.SignIn.route)
-                        Log.d(TAG, "navigate(SignIn) called successfully")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "CRASH navigating to SignIn", e)
-                    }
+                    navController.navigate(Screen.SignIn.route)
                 }) {
                     Text(
                         text = "Sign In",
@@ -139,14 +122,12 @@ fun CheckStatusScreen(navController: NavController) {
     }
 }
 
-// ── Reusable Role Card ──────────────────────────────────────────────────────
 @Composable
 private fun RoleCard(
     title: String,
     description: String,
     benefits: List<String>,
     iconRes: Int,
-    iconTint: androidx.compose.ui.graphics.Color,
     onClick: () -> Unit
 ) {
     Card(
@@ -162,11 +143,11 @@ private fun RoleCard(
                 .fillMaxWidth()
                 .padding(24.dp)
         ) {
-            Icon(
+            // Using Image instead of Icon to preserve original colors
+            Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = iconTint
+                modifier = Modifier.size(40.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))

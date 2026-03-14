@@ -1,10 +1,9 @@
 package com.fanyiadrien.ictu_ex.feature.onboarding
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,8 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -28,46 +29,67 @@ import com.fanyiadrien.ictu_ex.R
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.ui.theme.*
 import kotlinx.coroutines.delay
-import androidx.compose.foundation.Image
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun OnboardingScreen(
     navController: NavController,
     viewModel: OnboardingViewModel = viewModel()
 ) {
-    // ── Entrance animation triggers ──────────────────────────────────────────
-    var imageVisible by remember { mutableStateOf(false) }
-    var contentVisible by remember { mutableStateOf(false) }
+    val pages = listOf(
+        OnboardingPageData(
+            imageRes = R.drawable.computer,
+            title = "ICTU-Exchange",
+            description = "A verified campus marketplace that makes trading textbooks and electronics safer and easier for students."
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.book1,
+            title = "Smart Trading",
+            description = "Uses hardware sensors and biometrics to ensure secure transactions even without internet access."
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.air,
+            title = "Campus Essentials",
+            description = "Find everything you need for your studies, from laptops to lab coats, all within your campus community."
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.watch,
+            title = "Stay Notified",
+            description = "Get real-time updates on new listings and messages from buyers and sellers instantly."
+        )
+    )
 
+    // Auto-swipe Logic (3 seconds is a normal time delay)
     LaunchedEffect(Unit) {
-        imageVisible = true          // image fades/scales in immediately
-        delay(300)
-        contentVisible = true        // text & button slide up after 300ms
+        while (true) {
+            delay(3000)
+            val nextIndex = (viewModel.currentPage + 1) % pages.size
+            viewModel.goToPage(nextIndex)
+        }
     }
 
-    // Animated scale for the hero image (1f → full size)
-    val imageScale by animateFloatAsState(
-        targetValue = if (imageVisible) 1f else 0.75f,
-        animationSpec = tween(durationMillis = 600),
-        label = "imageScale"
+    val currentPageData = pages[viewModel.currentPage]
+
+    // Entrance animation
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    val entranceAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(1000),
+        label = "entranceAlpha"
     )
 
-    // Animated alpha for the hero image
-    val imageAlpha by animateFloatAsState(
-        targetValue = if (imageVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = 600),
-        label = "imageAlpha"
-    )
-
-    // ── Layout ───────────────────────────────────────────────────────────────
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(NeutralWhite)
                 .padding(paddingValues)
+                .alpha(entranceAlpha)
         ) {
             Column(
                 modifier = Modifier
@@ -78,65 +100,114 @@ fun OnboardingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // ── TOP: Hero image area ─────────────────────────────────────
-                OnboardingHeroImage(
-                    scale = imageScale,
-                    alpha = imageAlpha,
+                // ── TOP: Image Slider with Distinct Containers ──────────────
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
-                )
+                        .weight(1.2f)
+                        .padding(top = 40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedContent(
+                        targetState = viewModel.currentPage,
+                        transitionSpec = {
+                            (slideInHorizontally(animationSpec = tween(600), initialOffsetX = { it }) + fadeIn(tween(600)))
+                                .togetherWith(slideOutHorizontally(animationSpec = tween(600), targetOffsetX = { -it }) + fadeOut(tween(600)))
+                        },
+                        label = "imageSlider"
+                    ) { pageIndex ->
+                        OnboardingImageContainer(
+                            imageRes = pages[pageIndex].imageRes,
+                            pageIndex = pageIndex
+                        )
+                    }
+                }
 
                 // ── BOTTOM CONTENT ───────────────────────────────────────────
-                AnimatedVisibility(
-                    visible = contentVisible,
-                    enter = fadeIn(tween(500)) + slideInVertically(
-                        animationSpec = tween(500),
-                        initialOffsetY = { it / 3 }
-                    )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Title
-                        Text(
-                            text = "Time Journey\nWith Nike Shoes",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 26.sp,
-                                color = Purple10,
-                                textAlign = TextAlign.Center
+                    AnimatedContent(
+                        targetState = currentPageData,
+                        transitionSpec = {
+                            fadeIn(tween(400)) togetherWith fadeOut(tween(400))
+                        },
+                        label = "textTransition"
+                    ) { data ->
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = data.title,
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 28.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    textAlign = TextAlign.Center
+                                )
                             )
-                        )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = data.description,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 24.sp
+                                ),
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            )
+                        }
+                    }
 
-                        // Subtitle
-                        Text(
-                            text = "Every smart Nike Air best shoes will highlight beauty anywhere",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = 14.sp,
-                                color = NeutralGrey,
-                                textAlign = TextAlign.Center
-                            ),
-                            maxLines = 2
-                        )
+                    Spacer(modifier = Modifier.height(32.dp))
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                    PageIndicator(
+                        currentPage = viewModel.currentPage,
+                        totalPages = pages.size
+                    )
 
-                        // Page indicator dots
-                        PageIndicator(currentPage = viewModel.currentPage)
+                    Spacer(modifier = Modifier.height(40.dp))
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // CTA Button
-                        GetStartedButton(
+                    // ── Buttons ──────────────────────────────────────────────
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Button(
                             onClick = {
-                                // Navigate to CheckStatus and clear back stack
                                 navController.navigate(Screen.CheckStatus.route) {
                                     popUpTo(Screen.Onboarding.route) { inclusive = true }
                                 }
-                            }
-                        )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text(
+                                text = "Get Started",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+
+                        // Transparent Skip Button
+                        TextButton(
+                            onClick = {
+                                navController.navigate(Screen.CheckStatus.route) {
+                                    popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ) {
+                            Text(
+                                text = "Skip",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
                 }
             }
@@ -145,95 +216,64 @@ fun OnboardingScreen(
 }
 
 @Composable
-fun OnboardingHeroImage(
-    scale: Float,
-    alpha: Float,
-    modifier: Modifier = Modifier
-) {
+fun OnboardingImageContainer(imageRes: Int, pageIndex: Int) {
+    // Distinct backgrounds/shapes for each page
+    val backgroundBrush = when (pageIndex) {
+        0 -> Brush.linearGradient(listOf(Purple80.copy(0.15f), Color.White))
+        1 -> Brush.radialGradient(listOf(Color(0xFFE0F7FA), Color.White))
+        2 -> Brush.verticalGradient(listOf(Color(0xFFFFF3E0), Color.White))
+        else -> Brush.sweepGradient(listOf(Color(0xFFF3E5F5), Color.White))
+    }
+
+    val shape = when (pageIndex) {
+        0 -> RoundedCornerShape(topStart = 80.dp, bottomEnd = 80.dp)
+        1 -> RoundedCornerShape(40.dp)
+        2 -> RoundedCornerShape(topEnd = 100.dp, bottomStart = 100.dp)
+        else -> RoundedCornerShape(percent = 50) // Circle
+    }
+
     Box(
-        modifier = modifier,
+        modifier = Modifier
+            .size(280.dp)
+            .clip(shape)
+            .background(backgroundBrush),
         contentAlignment = Alignment.Center
     ) {
-        // Soft gradient backdrop — mimics the off-white/light grey card in the design
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .fillMaxHeight(0.88f)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(NeutralLight, NeutralWhite)
-                    ),
-                    shape = RoundedCornerShape(32.dp)
-                )
-        )
-
-        // Shoe image with scale + fade entrance
         Image(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground), // ← replace with your asset
-            contentDescription = "Nike Air sneaker",
+            painter = painterResource(id = imageRes),
+            contentDescription = null,
             modifier = Modifier
-                .fillMaxWidth(0.80f)
-                .aspectRatio(1f)
-                .scale(scale)
-                .alpha(alpha)
+                .size(180.dp)
+                .padding(16.dp),
+            contentScale = ContentScale.Fit
         )
     }
 }
 
+data class OnboardingPageData(
+    val imageRes: Int,
+    val title: String,
+    val description: String
+)
+
 @Composable
-fun PageIndicator(
-    currentPage: Int,
-    totalPages: Int = 3,
-    modifier: Modifier = Modifier
-) {
+fun PageIndicator(currentPage: Int, totalPages: Int) {
     Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         repeat(totalPages) { index ->
             val isActive = index == currentPage
             Box(
                 modifier = Modifier
-                    .height(6.dp)
+                    .height(8.dp)
                     .width(if (isActive) 24.dp else 8.dp)
                     .background(
-                        color = if (isActive) Purple40 else PurpleGrey80,
-                        shape = RoundedCornerShape(50)
+                        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(4.dp)
                     )
             )
         }
-    }
-}
-
-@Composable
-fun GetStartedButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        shape = RoundedCornerShape(30.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Purple40,
-            contentColor = NeutralWhite
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 4.dp,
-            pressedElevation = 2.dp
-        )
-    ) {
-        Text(
-            text = "Get Started",
-            style = MaterialTheme.typography.labelLarge.copy(
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                color = NeutralWhite
-            )
-        )
     }
 }
 

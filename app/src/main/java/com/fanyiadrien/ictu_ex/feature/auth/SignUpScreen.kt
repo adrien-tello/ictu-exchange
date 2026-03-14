@@ -33,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.R
+import com.fanyiadrien.ictu_ex.core.biometric.BiometricHelper
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 
@@ -47,13 +48,15 @@ fun SignUpScreen(
     Log.d(TAG, "SignUpScreen composed with userType=$userType")
     val uiState = viewModel.uiState
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
-    var email           by remember { mutableStateOf("") }
-    var displayName     by remember { mutableStateOf("") }
-    var studentId       by remember { mutableStateOf("") }
-    var password        by remember { mutableStateOf("") }
+
+    var email by remember { mutableStateOf("") }
+    var displayName by remember { mutableStateOf("") }
+    var studentId by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var passwordVisible        by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     val passwordMismatch = confirmPassword.isNotEmpty() && password != confirmPassword

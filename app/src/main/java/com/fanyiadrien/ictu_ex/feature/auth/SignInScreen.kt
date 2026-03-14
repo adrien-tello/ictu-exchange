@@ -35,6 +35,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.R
+import com.fanyiadrien.ictu_ex.core.biometric.BiometricHelper
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 
@@ -48,6 +49,7 @@ fun SignInScreen(
     Log.d(TAG, "SignInScreen composed")
     val uiState = viewModel.uiState
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

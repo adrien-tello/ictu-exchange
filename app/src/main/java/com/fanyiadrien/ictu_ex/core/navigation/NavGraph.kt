@@ -16,6 +16,7 @@ import com.fanyiadrien.ictu_ex.feature.detail.ItemDetailScreen
 import com.fanyiadrien.ictu_ex.feature.home.HomeScreen
 import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
 import com.fanyiadrien.ictu_ex.feature.post.PostItemScreen
+import com.fanyiadrien.ictu_ex.feature.profile.ProfileScreen
 import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 import com.google.firebase.auth.FirebaseAuth
 
@@ -116,7 +117,7 @@ fun NavGraph(
         }
 
         composable(route = Screen.Profile.route) {
-            // TODO: ProfileScreen()
+            ProfileScreen(navController = navController)
         }
         composable(route = Screen.Settings.route) {
         //TODO SettingScreen()

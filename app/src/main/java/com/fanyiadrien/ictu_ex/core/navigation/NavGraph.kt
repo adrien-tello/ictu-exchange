@@ -12,6 +12,7 @@ import com.fanyiadrien.ictu_ex.core.camera.CameraScreen
 import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
+import com.fanyiadrien.ictu_ex.feature.detail.ItemDetailScreen
 import com.fanyiadrien.ictu_ex.feature.home.HomeScreen
 import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
 import com.fanyiadrien.ictu_ex.feature.post.PostItemScreen
@@ -83,13 +84,10 @@ fun NavGraph(
         }
 
         composable(
-            route     = Screen.ItemDetail.route,     // "item_detail/{listingId}"
-            arguments = listOf(
-                navArgument("listingId") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val listingId = backStackEntry.arguments?.getString("listingId") ?: ""
-            // TODO: ItemDetailScreen(listingId = listingId)
+            route = Screen.ItemDetail.route,
+            arguments = listOf(navArgument("listingId") { type = NavType.StringType })
+        ) {
+            ItemDetailScreen(navController = navController)
         }
 
         composable(route = Screen.PostItem.route) {

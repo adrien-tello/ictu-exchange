@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.fanyiadrien.ictu_ex.core.camera.CameraScreen
+import com.fanyiadrien.ictu_ex.feature.activity.MyActivityScreen
 import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
@@ -27,14 +28,6 @@ private const val TAG = "ICTU_NavGraph"
 
 /**
  * Central NavGraph for ICTU-Ex.
- *
- * All screens are registered here. Each feature team member only needs to:
- *  1. Import their screen composable
- *  2. Call navController.navigate(Screen.X.route) to go somewhere
- *
- * Start destination is [Screen.Onboarding].
- * After login/signup, navigate to [Screen.Home] and clear the back stack
- * so the user cannot press Back to return to auth screens.
  */
 @Composable
 fun NavGraph(
@@ -51,35 +44,28 @@ fun NavGraph(
 
         // ── Onboarding ────────────────────────────────────────────────────────
         composable(route = Screen.Onboarding.route) {
-            Log.d(TAG, "Entering route: ${Screen.Onboarding.route}")
             OnboardingScreen(navController = navController)
         }
 
         composable(route = Screen.CheckStatus.route) {
-            Log.d(TAG, "Entering route: ${Screen.CheckStatus.route}")
             CheckStatusScreen(navController = navController)
         }
 
         // ── Auth ──────────────────────────────────────────────────────────────
         composable(
-            route     = Screen.SignUp.route,         // "sign_up/{userType}"
-            arguments = listOf(
-                navArgument("userType") { type = NavType.StringType }
-            )
+            route     = Screen.SignUp.route,
+            arguments = listOf(navArgument("userType") { type = NavType.StringType })
         ) { backStackEntry ->
             val userType = backStackEntry.arguments?.getString("userType") ?: "BUYER"
-            Log.d(TAG, "Entering route: sign_up with userType=$userType")
             SignUpScreen(navController = navController, userType = userType)
         }
 
         composable(route = Screen.SignIn.route) {
-            Log.d(TAG, "Entering route: ${Screen.SignIn.route}")
             SignInScreen(navController = navController)
         }
 
         // ── Main App ──────────────────────────────────────────────────────────
         composable(route = Screen.Home.route) {
-            Log.d(TAG, "Entering route: ${Screen.Home.route}")
             HomeScreen(
                 navController = navController,
                 themeMode = themeMode,
@@ -95,7 +81,6 @@ fun NavGraph(
         }
 
         composable(route = Screen.PostItem.route) {
-            // Observe URI returned from CameraScreen
             val capturedUriString = navController.currentBackStackEntry
                 ?.savedStateHandle
                 ?.get<String>("captured_image_uri")
@@ -109,7 +94,6 @@ fun NavGraph(
         composable(route = Screen.Camera.route) {
             CameraScreen(
                 onImageCaptured = { uri ->
-                    // Pass URI back to PostItemScreen via SavedStateHandle
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set("captured_image_uri", uri.toString())
@@ -137,6 +121,11 @@ fun NavGraph(
 
         composable(route = Screen.Cart.route) {
             CartScreen(navController = navController)
+        }
+
+        // ── NEW: My Activity Dashboard ───────────────────────────────────────
+        composable(route = Screen.MyActivity.route) {
+            MyActivityScreen(navController = navController)
         }
     }
 }

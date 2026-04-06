@@ -26,8 +26,8 @@ import com.fanyiadrien.ictu_ex.feature.notifications.NotificationViewModel
 /**
  * Floating pill bottom nav.
  *
- * Seller layout: Home | Search | [+] | 🔔(badge) | Profile
- * Buyer  layout: Home | Search | Settings | Cart | Profile
+ * Seller layout: Home | Search | [+] | Messages | Profile
+ * Buyer  layout: Home | Search | Settings | Messages | Profile
  */
 @Composable
 fun IctuBottomNav(
@@ -39,6 +39,7 @@ fun IctuBottomNav(
         .currentBackStackEntryAsState().value
         ?.destination?.route
 
+    // unreadCount could represent unread messages or generic notifications
     val unreadCount by notificationViewModel.unreadCount.collectAsState(initial = 0)
 
     Box(
@@ -110,21 +111,12 @@ fun IctuBottomNav(
                     )
                 }
 
-                // ── Notifications (seller) / Cart (buyer) ─────────────────
-                if (isSeller) {
-                    NotificationNavItem(
-                        selected    = currentRoute == Screen.Notifications.route,
-                        unreadCount = unreadCount,
-                        onClick     = { navController.navigate(Screen.Notifications.route) }
-                    )
-                } else {
-                    NavItem(
-                        label    = "Cart",
-                        selected = currentRoute == Screen.Cart.route,
-                        icon     = Icons.Rounded.ShoppingCart,
-                        onClick  = { navController.navigate(Screen.Cart.route) }
-                    )
-                }
+                // ── Messages (Shared) ─────────────────────────────────────
+                MessageNavItem(
+                    selected    = currentRoute?.startsWith(Screen.Messages.route) == true,
+                    unreadCount = unreadCount,
+                    onClick     = { navController.navigate(Screen.Messages.route) }
+                )
 
                 // ── Profile ───────────────────────────────────────────────
                 NavItem(
@@ -138,9 +130,8 @@ fun IctuBottomNav(
     }
 }
 
-// ── Notification bell with unread badge ──────────────────────────────────────
 @Composable
-private fun NotificationNavItem(
+private fun MessageNavItem(
     selected: Boolean,
     unreadCount: Int,
     onClick: () -> Unit
@@ -154,8 +145,8 @@ private fun NotificationNavItem(
     ) {
         Box {
             Icon(
-                imageVector        = Icons.Rounded.Notifications,
-                contentDescription = "Notifications",
+                imageVector        = Icons.Rounded.ChatBubbleOutline,
+                contentDescription = "Messages",
                 tint               = if (selected) MaterialTheme.colorScheme.primary
                                      else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier           = Modifier.size(22.dp)
@@ -182,7 +173,7 @@ private fun NotificationNavItem(
         }
         Spacer(modifier = Modifier.height(3.dp))
         Text(
-            text  = "Alerts",
+            text  = "Chats",
             style = MaterialTheme.typography.labelSmall,
             color = if (selected) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant

@@ -15,6 +15,7 @@ import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
 import com.fanyiadrien.ictu_ex.feature.cart.CartScreen
 import com.fanyiadrien.ictu_ex.feature.detail.ItemDetailScreen
 import com.fanyiadrien.ictu_ex.feature.home.HomeScreen
+import com.fanyiadrien.ictu_ex.feature.messages.MessagesScreen
 import com.fanyiadrien.ictu_ex.feature.notifications.NotificationScreen
 import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
 import com.fanyiadrien.ictu_ex.feature.post.PostItemScreen
@@ -111,6 +112,24 @@ fun NavGraph(
 
         composable(Screen.Notifications.route) {
             NotificationScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.Messages.routeWithArgs,
+            arguments = listOf(
+                navArgument(Screen.Messages.sellerIdArg) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument(Screen.Messages.listingIdArg) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
+            MessagesScreen(navController = navController)
         }
 
         composable(Screen.MyActivity.route) {

@@ -78,6 +78,8 @@ fun HomeScreen(
             item {
                 HomeTopBar(
                     user = uiState.currentUser,
+                    isSeller = uiState.isSeller,
+                    cartItemCount = uiState.cartItemCount,
                     onCartClick = { navController.navigate(Screen.Cart.route) },
                     onProfileClick = { navController.navigate(Screen.Profile.route) }
                 )
@@ -161,7 +163,9 @@ fun HomeScreen(
 
 @Composable
 private fun HomeTopBar(
-    user: User?, 
+    user: User?,
+    isSeller: Boolean,
+    cartItemCount: Int,
     onCartClick: () -> Unit,
     onProfileClick: () -> Unit
 ) {
@@ -203,13 +207,25 @@ private fun HomeTopBar(
             }
         }
         
-        IconButton(
-            onClick = onCartClick,
-            modifier = Modifier
-                .clip(RoundedCornerShape(14.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Icon(Icons.Rounded.ShoppingBag, null, tint = MaterialTheme.colorScheme.onSurface)
+        if (!isSeller) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BadgedBox(
+                    badge = {
+                        if (cartItemCount > 0) {
+                            Badge { Text(if (cartItemCount > 9) "9+" else cartItemCount.toString()) }
+                        }
+                    }
+                ) {
+                    IconButton(
+                        onClick = onCartClick,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Icon(Icons.Rounded.ShoppingBag, null, tint = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+            }
         }
     }
 }

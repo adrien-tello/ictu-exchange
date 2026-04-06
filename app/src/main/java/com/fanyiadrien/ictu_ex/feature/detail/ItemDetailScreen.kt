@@ -27,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.fanyiadrien.ictu_ex.R
+import com.fanyiadrien.ictu_ex.core.navigation.Screen
 
 @Composable
 fun ItemDetailScreen(
@@ -34,31 +35,60 @@ fun ItemDetailScreen(
     viewModel: ItemDetailViewModel = hiltViewModel()
 ) {
     val uiState = viewModel.uiState
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-
-        when {
-            uiState.isLoading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary
-                )
+    LaunchedEffect(uiState.cartAddedEvent) {
+        if (uiState.cartAddedEvent > 0) {
+            val result = snackbarHostState.showSnackbar(
+                message = "Added to cart. Tap View Cart or use the cart icon on Home.",
+                actionLabel = "View Cart",
+                withDismissAction = true
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                navController.navigate(Screen.Cart.route)
             }
+        }
+    }
 
-            uiState.errorMessage != null -> {
-                ErrorState(
-                    message = uiState.errorMessage,
-                    onBack  = { navController.popBackStack() },
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+    Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
 
-            uiState.listing != null -> {
-                DetailContent(
-                    uiState     = uiState,
-                    onBack      = { navController.popBackStack() },
-                    onAddToCart = viewModel::addToCart
-                )
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                uiState.errorMessage != null -> {
+                    ErrorState(
+                        message = uiState.errorMessage,
+                        onBack  = { navController.popBackStack() },
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                uiState.listing != null -> {
+                    DetailContent(
+                        uiState     = uiState,
+                        onBack      = { navController.popBackStack() },
+                        onAddToCart = viewModel::addToCart,
+                        onChatSeller = {
+                            val listing = uiState.listing!!
+                            navController.navigate(
+                                Screen.Messages.createRoute(
+                                    sellerId = listing.sellerId,
+                                    listingId = listing.id
+                                )
+                            )
+                        }
+                    )
+                }
             }
         }
     }
@@ -69,11 +99,11 @@ fun ItemDetailScreen(
 private fun DetailContent(
     uiState: ItemDetailUiState,
     onBack: () -> Unit,
-    onAddToCart: () -> Unit
+    onAddToCart: () -> Unit,
+    onChatSeller: () -> Unit
 ) {
     val listing = uiState.listing!!
     var isSaved by remember { mutableStateOf(false) }
-    var showContactSheet by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -238,22 +268,16 @@ private fun DetailContent(
 
             // ── Action buttons ────────────────────────────────────────────
             ActionButtons(
+                isBuyer      = uiState.isBuyer,
                 inCart       = uiState.inCart,
                 onAddToCart  = onAddToCart,
-                onChatSeller = { showContactSheet = true }
+                onChatSeller = onChatSeller
             )
 
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
-    // ── Contact bottom sheet ──────────────────────────────────────────────────
-    if (showContactSheet) {
-        ContactSellerSheet(
-            seller    = uiState.seller,
-            onDismiss = { showContactSheet = false }
-        )
-    }
 }
 
 // ── Rating row ────────────────────────────────────────────────────────────────
@@ -402,6 +426,7 @@ private fun DetailChip(
 // ── Action buttons ────────────────────────────────────────────────────────────
 @Composable
 private fun ActionButtons(
+    isBuyer: Boolean,
     inCart: Boolean,
     onAddToCart: () -> Unit,
     onChatSeller: () -> Unit
@@ -421,129 +446,32 @@ private fun ActionButtons(
             Text("Chat Seller", style = MaterialTheme.typography.titleSmall)
         }
 
-        Button(
-            onClick  = onAddToCart,
-            enabled  = !inCart,
-            modifier = Modifier.weight(1f).height(54.dp),
-            shape    = MaterialTheme.shapes.large,
-            colors   = ButtonDefaults.buttonColors(
-                containerColor = if (inCart) MaterialTheme.colorScheme.secondaryContainer
-                                 else MaterialTheme.colorScheme.primary,
-                contentColor   = if (inCart) MaterialTheme.colorScheme.onSecondaryContainer
-                                 else MaterialTheme.colorScheme.onPrimary,
-                disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                disabledContentColor   = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-        ) {
-            Icon(
-                imageVector = if (inCart) Icons.Rounded.ShoppingCart else Icons.Rounded.AddShoppingCart,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text  = if (inCart) "In Cart" else "Add to Cart",
-                style = MaterialTheme.typography.titleSmall
-            )
-        }
-    }
-}
-
-// ── Contact seller bottom sheet ───────────────────────────────────────────────
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ContactSellerSheet(
-    seller: com.fanyiadrien.ictu_ex.data.model.User?,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState       = sheetState,
-        containerColor   = MaterialTheme.colorScheme.surface,
-        shape            = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement   = Arrangement.spacedBy(16.dp),
-            horizontalAlignment   = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text       = "Contact Seller",
-                style      = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color      = MaterialTheme.colorScheme.onSurface
-            )
-
-            HorizontalDivider()
-
-            // Seller info inside sheet
-            seller?.let {
-                Row(
-                    modifier          = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier         = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text       = it.displayName.take(1).uppercase(),
-                            style      = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color      = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    Column {
-                        Text(it.displayName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text(it.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-
-            // TODO: Chat feature
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color    = MaterialTheme.colorScheme.primaryContainer,
-                shape    = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Rounded.Info,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text  = "In-app chat coming soon. For now, meet on campus for exchange.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-
+        if (isBuyer) {
             Button(
-                onClick  = onDismiss,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.large
+                onClick  = onAddToCart,
+                enabled  = !inCart,
+                modifier = Modifier.weight(1f).height(54.dp),
+                shape    = MaterialTheme.shapes.large,
+                colors   = ButtonDefaults.buttonColors(
+                    containerColor = if (inCart) MaterialTheme.colorScheme.secondaryContainer
+                                     else MaterialTheme.colorScheme.primary,
+                    contentColor   = if (inCart) MaterialTheme.colorScheme.onSecondaryContainer
+                                     else MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    disabledContentColor   = MaterialTheme.colorScheme.onSecondaryContainer
+                )
             ) {
-                Text("Got it", style = MaterialTheme.typography.titleMedium)
+                Icon(
+                    imageVector = if (inCart) Icons.Rounded.ShoppingCart else Icons.Rounded.AddShoppingCart,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text  = if (inCart) "In Cart" else "Add to Cart",
+                    style = MaterialTheme.typography.titleSmall
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

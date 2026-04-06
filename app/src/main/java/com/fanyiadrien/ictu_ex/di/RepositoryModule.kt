@@ -2,6 +2,7 @@ package com.fanyiadrien.ictu_ex.di
 
 import com.fanyiadrien.ictu_ex.data.repository.CartRepository
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
+import com.fanyiadrien.ictu_ex.data.repository.MessagesRepository
 import com.fanyiadrien.ictu_ex.data.repository.NotificationRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
 import com.fanyiadrien.ictu_ex.data.repository.WishlistRepository
@@ -45,6 +46,13 @@ object RepositoryModule {
         auth: FirebaseAuth,
         firestore: FirebaseFirestore
     ): NotificationRepository = NotificationRepository(auth, firestore)
+
+    @Provides
+    @Singleton
+    fun provideMessagesRepository(
+        auth: FirebaseAuth,
+        firestore: FirebaseFirestore
+    ): MessagesRepository = MessagesRepository(auth, firestore)
 
     @Provides
     @Singleton

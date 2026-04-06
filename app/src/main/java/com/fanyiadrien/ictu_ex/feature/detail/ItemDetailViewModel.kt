@@ -30,13 +30,26 @@ class ItemDetailViewModel @Inject constructor(
     init {
         // Pull listingId injected by NavGraph
         val listingId = savedStateHandle.get<String>("listingId") ?: ""
+        loadCurrentUser()
         loadDetail(listingId)
     }
 
     fun addToCart() {
+        if (!uiState.isBuyer) return
         uiState.listing?.let {
             cartRepository.addListing(it)
-            uiState = uiState.copy(inCart = true)
+            uiState = uiState.copy(inCart = true, cartAddedEvent = uiState.cartAddedEvent + 1)
+        }
+    }
+
+    private fun loadCurrentUser() {
+        viewModelScope.launch {
+            when (val result = userRepository.getCurrentUser()) {
+                is AppResult.Success -> {
+                    uiState = uiState.copy(currentUser = result.data)
+                }
+                else -> Unit
+            }
         }
     }
 
@@ -79,7 +92,11 @@ class ItemDetailViewModel @Inject constructor(
 data class ItemDetailUiState(
     val listing: Listing? = null,
     val seller: User? = null,
+    val currentUser: User? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val inCart: Boolean = false
-)
+    val inCart: Boolean = false,
+    val cartAddedEvent: Int = 0
+) {
+    val isBuyer: Boolean get() = currentUser?.userType == "BUYER"
+}

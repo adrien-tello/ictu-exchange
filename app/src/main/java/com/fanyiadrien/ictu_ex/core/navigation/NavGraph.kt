@@ -22,6 +22,7 @@ import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
 import com.fanyiadrien.ictu_ex.feature.post.PostItemScreen
 import com.fanyiadrien.ictu_ex.feature.profile.EditProfileScreen
 import com.fanyiadrien.ictu_ex.feature.profile.ProfileScreen
+import com.fanyiadrien.ictu_ex.feature.search.SearchScreen
 import com.fanyiadrien.ictu_ex.feature.settings.SettingScreen
 import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 import com.google.firebase.auth.FirebaseAuth
@@ -62,6 +63,10 @@ fun NavGraph(
                 themeMode         = themeMode,
                 onThemeModeChange = onThemeModeChange
             )
+        }
+
+        composable(Screen.Search.route) {
+            SearchScreen(navController = navController)
         }
 
         composable(

@@ -33,4 +33,32 @@ sealed class Screen(val route: String) {
     object ItemDetail : Screen("item_detail/{listingId}") {
         fun createRoute(listingId: String) = "item_detail/$listingId"
     }
+<<<<<<< Updated upstream
+=======
+
+    // ── Main App ──────────────────────────────────────────────────────────────
+    object Search   : Screen("search")
+    object Wishlist : Screen("wishlist")
+
+    /** Post a new item for sale/swap. Seller-only screen. */
+    object PostItem : Screen("post_item")
+
+    /** User profile screen. */
+    object Profile : Screen("profile")
+
+    /** Edit profile screen. */
+    object EditProfile : Screen("edit_profile")
+
+    /* Settings Screen */
+    object Settings: Screen("settings")
+
+    /* Camera screen*/
+    object Camera: Screen("camera")
+
+    /** Cart screen — student's selected items before checkout. */
+    object Cart : Screen("cart")
+
+    /** Notifications screen for sellers. */
+    object Notifications : Screen("notifications")
+>>>>>>> Stashed changes
 }

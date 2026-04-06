@@ -8,7 +8,10 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+<<<<<<< Updated upstream
 import java.util.UUID
+=======
+>>>>>>> Stashed changes
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,11 +21,16 @@ class NotificationRepository @Inject constructor(
     private val firestore: FirebaseFirestore
 ) {
 
+<<<<<<< Updated upstream
     // ── Real-time listener ────────────────────────────────────────────────────
 
     /**
      * Live stream of notifications for the currently logged-in user.
      * Works for both sellers (NEW_ORDER) and buyers (NEW_LISTING, ORDER_PLACED).
+=======
+    /**
+     * Real-time stream of notifications for the current user.
+>>>>>>> Stashed changes
      */
     fun getNotifications(): Flow<List<Notification>> = callbackFlow {
         val uid = auth.currentUser?.uid
@@ -37,13 +45,25 @@ class NotificationRepository @Inject constructor(
             .collection("items")
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
+<<<<<<< Updated upstream
                 if (error != null) { close(error); return@addSnapshotListener }
                 snapshot?.let { trySend(it.toObjects(Notification::class.java)) }
+=======
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val items = snapshot.toObjects(Notification::class.java)
+                    trySend(items)
+                }
+>>>>>>> Stashed changes
             }
 
         awaitClose { subscription.remove() }
     }
 
+<<<<<<< Updated upstream
     /** Count of unread notifications — used for the badge in the bottom nav. */
     fun getUnreadCount(): Flow<Int> = callbackFlow {
         val uid = auth.currentUser?.uid
@@ -179,6 +199,14 @@ class NotificationRepository @Inject constructor(
         val uid = auth.currentUser?.uid ?: return
         firestore.collection("notifications")
             .document(uid).collection("items").document(notifId)
+=======
+    suspend fun markAsRead(notifId: String) {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("notifications")
+            .document(uid)
+            .collection("items")
+            .document(notifId)
+>>>>>>> Stashed changes
             .update("read", true)
             .await()
     }
@@ -186,7 +214,13 @@ class NotificationRepository @Inject constructor(
     suspend fun deleteNotification(notifId: String) {
         val uid = auth.currentUser?.uid ?: return
         firestore.collection("notifications")
+<<<<<<< Updated upstream
             .document(uid).collection("items").document(notifId)
+=======
+            .document(uid)
+            .collection("items")
+            .document(notifId)
+>>>>>>> Stashed changes
             .delete()
             .await()
     }

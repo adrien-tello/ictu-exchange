@@ -19,11 +19,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Enable buildConfig and add placeholders for Cloudinary
-        buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"your_cloud_name\"")
-        buildConfigField("String", "CLOUDINARY_API_KEY", "\"your_api_key\"")
-        buildConfigField("String", "CLOUDINARY_API_SECRET", "\"your_api_secret\"")
     }
 
     buildTypes {
@@ -44,14 +39,12 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 }
 
 dependencies {
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))

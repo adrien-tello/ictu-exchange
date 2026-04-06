@@ -21,9 +21,15 @@ import com.fanyiadrien.ictu_ex.feature.cart.CartScreen
 import com.fanyiadrien.ictu_ex.feature.profile.EditProfileScreen
 import com.fanyiadrien.ictu_ex.feature.profile.ProfileScreen
 import com.fanyiadrien.ictu_ex.feature.settings.SettingScreen
+import com.fanyiadrien.ictu_ex.feature.notifications.NotificationScreen
 import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 import com.google.firebase.auth.FirebaseAuth
 
+<<<<<<< Updated upstream
+=======
+private const val TAG = "ICTU_NavGraph"
+
+>>>>>>> Stashed changes
 @Composable
 fun NavGraph(
     navController: NavHostController,
@@ -49,7 +55,13 @@ fun NavGraph(
         // ── Auth ──────────────────────────────────────────────────────────────
         composable(
             route     = Screen.SignUp.route,
+<<<<<<< Updated upstream
             arguments = listOf(navArgument("userType") { type = NavType.StringType })
+=======
+            arguments = listOf(
+                navArgument("userType") { type = NavType.StringType }
+            )
+>>>>>>> Stashed changes
         ) { backStackEntry ->
             val userType = backStackEntry.arguments?.getString("userType") ?: "BUYER"
             SignUpScreen(navController = navController, userType = userType)
@@ -121,9 +133,12 @@ fun NavGraph(
         composable(route = Screen.Notifications.route) {
             NotificationScreen(navController = navController)
         }
+<<<<<<< Updated upstream
 
         composable(route = Screen.MyActivity.route) {
             MyActivityScreen(navController = navController)
         }
+=======
+>>>>>>> Stashed changes
     }
 }

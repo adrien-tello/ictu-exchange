@@ -14,6 +14,7 @@ class NotificationViewModel @Inject constructor(
 
     val notifications = notificationRepository.getNotifications()
 
+<<<<<<< Updated upstream
     val unreadCount = notificationRepository.getUnreadCount()
 
     fun markAsRead(notifId: String) {
@@ -22,5 +23,17 @@ class NotificationViewModel @Inject constructor(
 
     fun deleteNotification(notifId: String) {
         viewModelScope.launch { notificationRepository.deleteNotification(notifId) }
+=======
+    fun markAsRead(notifId: String) {
+        viewModelScope.launch {
+            notificationRepository.markAsRead(notifId)
+        }
+    }
+
+    fun deleteNotification(notifId: String) {
+        viewModelScope.launch {
+            notificationRepository.deleteNotification(notifId)
+        }
+>>>>>>> Stashed changes
     }
 }

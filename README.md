@@ -90,3 +90,5 @@ The codebase is organised into the following top-level packages under `com.ictu.
 4. Build and run on a physical device or emulator (API 26+).
 
 > **Note:** Biometric and sensor features require a physical device for full functionality. The test suite uses simulated data and runs on both emulators and physical devices.
+> 
+> Download App(v1.0.0): https://github.com/fanyicharllson/ictu-exchange/releases/download/v1.0.0/ictu-market-v1.0.0.apk

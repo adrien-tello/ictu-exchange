@@ -1,14 +1,17 @@
 package com.fanyiadrien.ictu_ex.feature.post
 
+import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -19,28 +22,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material.icons.rounded.PhotoLibrary
+import com.fanyiadrien.ictu_ex.R
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.data.model.ListingCategory
-import android.Manifest
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostItemScreen(
     navController: NavController,
@@ -59,7 +59,6 @@ fun PostItemScreen(
         capturedImageUri?.let { viewModel.onImageSelected(it) }
     }
 
-    // ── Gallery picker ────────────────────────────────────────────────────────
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -78,150 +77,190 @@ fun PostItemScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 PostItemTopBar(
-                    onBackClick = {
-                        if (!uiState.isLocked) navController.popBackStack()
-                    },
+                    onBackClick = { if (!uiState.isLocked) navController.popBackStack() },
                     isLocked = uiState.isLocked
                 )
             }
         ) { paddingValues ->
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // ── Image picker ──────────────────────────────────────────
-                ImagePickerBox(
-                    imageUri = uiState.selectedImageUri,
-                    isLocked = uiState.isLocked,
-                    onPickImage = { showImageSourceSheet = true }
-                )
-
-                // ── Title ─────────────────────────────────────────────────
-                OutlinedTextField(
-                    value = uiState.title,
-                    onValueChange = { viewModel.onTitleChanged(it) },
-                    label = { Text("Item Title") },
-                    placeholder = { Text("e.g. Engineering Maths Level 200") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    enabled = !uiState.isLocked,
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = {
-                        Icon(
-                            Icons.Rounded.Edit, contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                )
-
-                // ── Price ─────────────────────────────────────────────────
-                OutlinedTextField(
-                    value = uiState.price,
-                    onValueChange = { viewModel.onPriceChanged(it) },
-                    label = { Text("Price (XAF)") },
-                    placeholder = { Text("e.g. 2500") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    enabled = !uiState.isLocked,
-                    shape = RoundedCornerShape(12.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    leadingIcon = {
-                        Icon(
-                            Icons.Rounded.Paid, contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                )
-
-                // ── Category dropdown ─────────────────────────────────────
-                CategoryDropdown(
-                    selected = uiState.selectedCategory,
-                    onSelected = viewModel::onCategorySelected,
-                    isLocked = uiState.isLocked
-                )
-
-                // ── Description ───────────────────────────────────────────
-                OutlinedTextField(
-                    value = uiState.description,
-                    onValueChange = { viewModel.onDescriptionChanged(it) },
-                    label = { Text("Description (optional)") },
-                    placeholder = { Text("Condition, edition, any details buyers should know…") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 100.dp),
-                    maxLines = 5,
-                    enabled = !uiState.isLocked,
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                // ── Share on Facebook ─────────────────────────────────────
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !uiState.isLocked) {
-                            viewModel.onShareOnFacebookChanged(!uiState.shareOnFacebook)
-                        },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = uiState.shareOnFacebook,
-                        onCheckedChange = { viewModel.onShareOnFacebookChanged(it) },
-                        enabled = !uiState.isLocked
+                // ── Header Section ──────────────────────────────────────────
+                Column {
+                    Text(
+                        text = "Create Listing",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Share listing to Facebook",
+                        text = "List your item and reach thousands of students on campus.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        Icons.Rounded.Share,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                // ── Error message ─────────────────────────────────────────
-                uiState.errorMessage?.let { error ->
+                // ── Photo Section ───────────────────────────────────────────
+                PostSection(
+                    title = "Product Photo",
+                    subtitle = "High quality photos help you sell faster"
+                ) {
+                    ImagePickerBox(
+                        imageUri = uiState.selectedImageUri,
+                        isLocked = uiState.isLocked,
+                        onPickImage = { showImageSourceSheet = true }
+                    )
+                }
+
+                // ── Basic Info Section ──────────────────────────────────────
+                PostSection(
+                    title = "Essential Details",
+                    subtitle = "Tell us what you're selling"
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        OutlinedTextField(
+                            value = uiState.title,
+                            onValueChange = { viewModel.onTitleChanged(it) },
+                            label = { Text("Item Title") },
+                            placeholder = { Text("e.g. Engineering Maths Book") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !uiState.isLocked,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = uiState.price,
+                            onValueChange = { viewModel.onPriceChanged(it) },
+                            label = { Text("Price (XAF)") },
+                            placeholder = { Text("e.g. 5000") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !uiState.isLocked,
+                            shape = RoundedCornerShape(16.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            leadingIcon = {
+                                Text(
+                                    "XAF",
+                                    modifier = Modifier.padding(start = 12.dp),
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                            )
+                        )
+
+                        CategoryDropdown(
+                            selected = uiState.selectedCategory,
+                            onSelected = viewModel::onCategorySelected,
+                            isLocked = uiState.isLocked
+                        )
+                    }
+                }
+
+                // ── Description Section ─────────────────────────────────────
+                PostSection(
+                    title = "Description",
+                    subtitle = "Add condition, size, or any flaws"
+                ) {
+                    OutlinedTextField(
+                        value = uiState.description,
+                        onValueChange = { viewModel.onDescriptionChanged(it) },
+                        placeholder = { Text("Describe your item here...") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 120.dp),
+                        enabled = !uiState.isLocked,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                        )
+                    )
+                }
+
+                // ── Extras Section ──────────────────────────────────────────
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.errorContainer)
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            .clickable(enabled = !uiState.isLocked) {
+                                viewModel.onShareOnFacebookChanged(!uiState.shareOnFacebook)
+                            }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Rounded.ErrorOutline,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Rounded.Share,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Facebook Marketplace",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Text(
+                                text = "Cross-post to campus groups",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = uiState.shareOnFacebook,
+                            onCheckedChange = { viewModel.onShareOnFacebookChanged(it) },
+                            enabled = !uiState.isLocked
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                // ── Submit Button ───────────────────────────────────────────
+                AnimatedVisibility(visible = uiState.errorMessage != null) {
+                    uiState.errorMessage?.let { error ->
+                        Text(
+                            text = error,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
 
-                // ── Post button ───────────────────────────────────────────
                 Button(
                     onClick = {
                         viewModel.postListing(context) {
@@ -230,22 +269,18 @@ fun PostItemScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(60.dp),
                     enabled = uiState.isFormValid && !uiState.isLocked,
-                    shape = MaterialTheme.shapes.large
+                    shape = RoundedCornerShape(18.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                 ) {
-                    Icon(
-                        Icons.Rounded.Upload, contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Post Listing",
-                        style = MaterialTheme.typography.titleMedium
+                        text = if (uiState.isLocked) "Publishing..." else "Publish Listing",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(40.dp))
             }
         }
 
@@ -263,45 +298,50 @@ fun PostItemScreen(
             )
         }
 
-        // ── Blocking overlay during upload/save ───────────────────────────────
-        // Sits on top of everything — user cannot tap anything underneath
+        // ── Upload Progress Overlay ──────────────────────────────────────────
         if (uiState.isLocked) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f))
-                    .clickable(enabled = false) {},   // absorbs all touches
+                    .background(Color.Black.copy(alpha = 0.7f))
+                    .clickable(enabled = false) {},
                 contentAlignment = Alignment.Center
             ) {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(8.dp)
+                Surface(
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 8.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(32.dp),
+                        modifier = Modifier.padding(40.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(48.dp),
-                            strokeWidth = 4.dp
-                        )
-                        Text(
-                            text = uiState.loadingMessage,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "Do not close the app",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(80.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 6.dp,
+                                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                            Icon(
+                                Icons.Rounded.CloudUpload,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = uiState.loadingMessage,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Text(
+                                text = "Optimizing your listing...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -309,113 +349,117 @@ fun PostItemScreen(
     }
 }
 
-// ── Top bar ───────────────────────────────────────────────────────────────────
+@Composable
+private fun PostSection(
+    title: String,
+    subtitle: String,
+    content: @Composable () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        content()
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PostItemTopBar(onBackClick: () -> Unit, isLocked: Boolean) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
             Text(
-                text = "Post an Item",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                text = "Sell Item",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
         },
         navigationIcon = {
-            IconButton(
-                onClick = onBackClick,
-                enabled = !isLocked
-            ) {
-                Icon(
-                    Icons.Rounded.ArrowBackIosNew,
-                    contentDescription = "Back",
-                    tint = if (isLocked)
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                    else
-                        MaterialTheme.colorScheme.onBackground
-                )
+            IconButton(onClick = onBackClick, enabled = !isLocked) {
+                Icon(Icons.Rounded.ArrowBackIosNew, contentDescription = "Back")
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.background
         )
     )
 }
 
-// ── Image picker box ──────────────────────────────────────────────────────────
 @Composable
 private fun ImagePickerBox(
     imageUri: Uri?,
     isLocked: Boolean,
     onPickImage: () -> Unit
 ) {
+    val dashColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(
-                width = 1.5.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(16.dp)
-            )
+            .height(240.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             .clickable(enabled = !isLocked, onClick = onPickImage),
         contentAlignment = Alignment.Center
     ) {
         if (imageUri != null) {
-            // Show selected image preview
             AsyncImage(
                 model = imageUri,
-                contentDescription = "Selected image",
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            // Edit overlay on top of image
-            if (!isLocked) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(10.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        Icons.Rounded.Edit,
-                        contentDescription = "Change image",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(12.dp)
+            ) {
+                Icon(Icons.Rounded.CameraAlt, null, tint = Color.White)
             }
         } else {
-            // Empty state — prompt to pick
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    Icons.Rounded.AddPhotoAlternate,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Rounded.AddPhotoAlternate,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = "Upload Product Image",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                 )
                 Text(
-                    text = "Tap to select a photo",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Max 5MB",
+                    text = "Supports JPG, PNG (Max 5MB)",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -424,75 +468,71 @@ private fun ImageSourceSheet(
     onCamera: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(bottom = 40.dp, start = 24.dp, end = 24.dp, top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Add Product Photo",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                text = "Select Image Source",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
-
-            Text(
-                text = "Choose how you want to add your product image",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Gallery option
-            OutlinedButton(
-                onClick = onGallery,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.large
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    Icons.Rounded.PhotoLibrary,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                ImageSourceCard(
+                    icon = Icons.Rounded.PhotoLibrary,
+                    label = "Gallery",
+                    modifier = Modifier.weight(1f),
+                    onClick = onGallery
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Choose from Gallery")
-            }
-
-            // Camera option
-            Button(
-                onClick = onCamera,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.large
-            ) {
-                Icon(
-                    Icons.Rounded.Camera,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                ImageSourceCard(
+                    icon = Icons.Rounded.PhotoCamera,
+                    label = "Camera",
+                    modifier = Modifier.weight(1f),
+                    onClick = onCamera
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Take a Photo")
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
+@Composable
+private fun ImageSourceCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(100.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
 
-// ── Category dropdown ─────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategoryDropdown(
@@ -501,8 +541,6 @@ private fun CategoryDropdown(
     isLocked: Boolean
 ) {
     var expanded by remember { mutableStateOf(false) }
-
-    // Exclude ALL from dropdown — it's only for filtering, not posting
     val categories = ListingCategory.values().filter { it != ListingCategory.ALL }
 
     ExposedDropdownMenuBox(
@@ -514,23 +552,19 @@ private fun CategoryDropdown(
             onValueChange = {},
             readOnly = true,
             label = { Text("Category") },
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
             enabled = !isLocked,
-            leadingIcon = {
-                Icon(
-                    Icons.Rounded.Category, contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            )
         )
         ExposedDropdownMenu(
             expanded = expanded && !isLocked,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
         ) {
             categories.forEach { category ->
                 DropdownMenuItem(
@@ -538,7 +572,8 @@ private fun CategoryDropdown(
                     onClick = {
                         onSelected(category)
                         expanded = false
-                    }
+                    },
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
         }

@@ -2,16 +2,28 @@ package com.fanyiadrien.ictu_ex
 
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.rememberNavController
@@ -19,6 +31,7 @@ import com.fanyiadrien.ictu_ex.core.biometric.BiometricHelper
 import com.fanyiadrien.ictu_ex.core.navigation.NavGraph
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.core.sensors.LightSensorManager
+import com.fanyiadrien.ictu_ex.core.sensors.ShakeSensorManager
 import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,15 +48,23 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var lightSensorManager: LightSensorManager
 
+    @Inject
+    lateinit var shakeSensorManager: ShakeSensorManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Explicitly call the companion function
         installSplashScreen()
-        
         super.onCreate(savedInstanceState)
 
         setContent {
             val sensorIsDark by lightSensorManager.isDark.collectAsState()
             var themeMode by rememberSaveable { mutableStateOf(ThemeMode.AUTO) }
+            var showShakeReport by remember { mutableStateOf(false) }
+
+            LaunchedEffect(Unit) {
+                shakeSensorManager.onShake.collect {
+                    showShakeReport = true
+                }
+            }
 
             val isDark = when (themeMode) {
                 ThemeMode.AUTO -> sensorIsDark
@@ -94,13 +115,105 @@ class MainActivity : FragmentActivity() {
                         }
                     } else {
                         val navController = rememberNavController()
-                        NavGraph(
-                            navController = navController,
-                            startDestination = startDestination ?: Screen.Onboarding.route,
-                            auth = auth,
-                            themeMode = themeMode,
-                            onThemeModeChange = { themeMode = it }
+                        Box {
+                            NavGraph(
+                                navController = navController,
+                                startDestination = startDestination ?: Screen.Onboarding.route,
+                                auth = auth,
+                                themeMode = themeMode,
+                                onThemeModeChange = { themeMode = it }
+                            )
+
+                            if (showShakeReport) {
+                                ShakeReportModal(onDismiss = { showShakeReport = false })
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun ShakeReportModal(onDismiss: () -> Unit) {
+        var reportText by remember { mutableStateOf("") }
+        
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .wrapContentHeight(),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.errorContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Rounded.Flag,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(32.dp)
                         )
+                    }
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Something wrong?",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = "You've detected a shake! Report suspicious activity or bugs here.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = reportText,
+                        onValueChange = { reportText = it },
+                        placeholder = { Text("What happened?") },
+                        modifier = Modifier.fillMaxWidth().height(120.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f).height(50.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("Cancel")
+                        }
+                        Button(
+                            onClick = { onDismiss() },
+                            modifier = Modifier.weight(1f).height(50.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            enabled = reportText.isNotBlank()
+                        ) {
+                            Text("Submit")
+                        }
                     }
                 }
             }
@@ -166,7 +279,6 @@ class MainActivity : FragmentActivity() {
                 }
             }
 
-            // Footer branding
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -192,10 +304,12 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         lightSensorManager.register()
+        shakeSensorManager.register()
     }
 
     override fun onPause() {
         super.onPause()
         lightSensorManager.unregister()
+        shakeSensorManager.unregister()
     }
 }

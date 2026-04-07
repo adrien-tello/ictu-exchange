@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +8,9 @@ plugins {
     alias(libs.plugins.googleServices)
     alias(libs.plugins.daggerHiltAndroid)
 }
+
+val localProps = Properties()
+localProps.load(rootProject.file("local.properties").inputStream())
 
 android {
     namespace = "com.fanyiadrien.ictu_ex"
@@ -20,10 +25,17 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Cloudinary Configuration (Consider using gradle.properties for sensitive data)
-        buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"your_cloud_name\"")
-        buildConfigField("String", "CLOUDINARY_API_KEY", "\"your_api_key\"")
-        buildConfigField("String", "CLOUDINARY_API_SECRET", "\"your_api_secret\"")
+        buildConfigField(
+            "String",
+            "CLOUDINARY_CLOUD_NAME",
+            "\"${localProps["CLOUDINARY_CLOUD_NAME"]}\""
+        )
+        buildConfigField("String", "CLOUDINARY_API_KEY", "\"${localProps["CLOUDINARY_API_KEY"]}\"")
+        buildConfigField(
+            "String",
+            "CLOUDINARY_API_SECRET",
+            "\"${localProps["CLOUDINARY_API_SECRET"]}\""
+        )
     }
 
     buildTypes {

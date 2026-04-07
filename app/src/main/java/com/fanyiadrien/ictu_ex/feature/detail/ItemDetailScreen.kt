@@ -78,6 +78,7 @@ fun ItemDetailScreen(
                         uiState     = uiState,
                         onBack      = { navController.popBackStack() },
                         onAddToCart = viewModel::addToCart,
+                        onToggleFavorite = viewModel::toggleFavorite,
                         onChatSeller = {
                             uiState.listing?.let { listing ->
                                 if (uiState.currentUser?.uid != listing.sellerId) {
@@ -103,10 +104,11 @@ private fun DetailContent(
     uiState: ItemDetailUiState,
     onBack: () -> Unit,
     onAddToCart: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onChatSeller: () -> Unit
 ) {
     val listing = uiState.listing!!
-    var isSaved by remember { mutableStateOf(false) }
+    val isFavorite = uiState.isFavorite
 
     Column(
         modifier = Modifier
@@ -162,7 +164,7 @@ private fun DetailContent(
 
             // Save / wishlist button
             IconButton(
-                onClick  = { isSaved = !isSaved },
+                onClick  = onToggleFavorite,
                 modifier = Modifier
                     .padding(16.dp)
                     .align(Alignment.TopEnd)
@@ -170,10 +172,10 @@ private fun DetailContent(
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
             ) {
                 Icon(
-                    imageVector = if (isSaved) Icons.Rounded.Favorite
+                    imageVector = if (isFavorite) Icons.Rounded.Favorite
                     else Icons.Rounded.FavoriteBorder,
                     contentDescription = "Save",
-                    tint = if (isSaved) Color(0xFFE53935)
+                    tint = if (isFavorite) Color(0xFF8E24AA) // Purple
                     else MaterialTheme.colorScheme.onSurface
                 )
             }

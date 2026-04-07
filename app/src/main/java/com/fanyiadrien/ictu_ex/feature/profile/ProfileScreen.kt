@@ -61,10 +61,12 @@ fun ProfileScreen(
     val menuItems = listOf(
         ProfileMenuItemData(Icons.Rounded.Edit,         "Edit Profile",    "Update your info",
             route = Screen.EditProfile.route),
-        ProfileMenuItemData(Icons.Rounded.Notifications,"Notifications",   "Manage alerts"),
+        ProfileMenuItemData(Icons.Rounded.Notifications,"Notifications",   "Manage alerts",
+            route = Screen.Notifications.route),
         ProfileMenuItemData(Icons.Rounded.Language,     "Language",        "English"),
         ProfileMenuItemData(Icons.Rounded.CreditCard,   "My Card",         "Payment methods"),
-        ProfileMenuItemData(Icons.Rounded.Favorite,     "Favourite",       "Saved items"),
+        ProfileMenuItemData(Icons.Rounded.Favorite,     "Favourite",       "Saved items",
+            route = Screen.Wishlist.route),
         ProfileMenuItemData(Icons.Rounded.Settings,     "Settings",        "App preferences",
             route = Screen.Settings.route)
     )

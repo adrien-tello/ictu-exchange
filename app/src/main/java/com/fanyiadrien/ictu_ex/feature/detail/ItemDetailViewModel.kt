@@ -12,6 +12,7 @@ import com.fanyiadrien.ictu_ex.data.repository.CartRepository
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
 import com.fanyiadrien.ictu_ex.data.repository.NotificationRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
+import com.fanyiadrien.ictu_ex.data.repository.WishlistRepository
 import com.fanyiadrien.ictu_ex.utils.AppResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -22,6 +23,7 @@ class ItemDetailViewModel @Inject constructor(
     private val listingRepository: ListingRepository,
     private val userRepository: UserRepository,
     private val cartRepository: CartRepository,
+    private val wishlistRepository: WishlistRepository,
     private val notificationRepository: NotificationRepository,
     savedStateHandle: SavedStateHandle         // reads listingId from nav args automatically
 ) : ViewModel() {
@@ -34,6 +36,32 @@ class ItemDetailViewModel @Inject constructor(
         val listingId = savedStateHandle.get<String>("listingId") ?: ""
         loadCurrentUser()
         loadDetail(listingId)
+        observeWishlist(listingId)
+    }
+
+    private fun observeWishlist(listingId: String) {
+        viewModelScope.launch {
+            wishlistRepository.observeWishlistedIds().collect { ids ->
+                uiState = uiState.copy(isFavorite = ids.contains(listingId))
+            }
+        }
+    }
+
+    fun toggleFavorite() {
+        val listing = uiState.listing ?: return
+        viewModelScope.launch {
+            val wasAdded = wishlistRepository.toggleWishlist(listing.id)
+            if (wasAdded) {
+                val userId = wishlistRepository.getCurrentUserId()
+                if (userId != null) {
+                    notificationRepository.notifyUserItemFavorited(
+                        userId = userId,
+                        listingId = listing.id,
+                        listingTitle = listing.title
+                    )
+                }
+            }
+        }
     }
 
     fun addToCart() {
@@ -68,7 +96,10 @@ class ItemDetailViewModel @Inject constructor(
             // Fetch listing and seller in parallel feel
             when (val result = listingRepository.getListingById(listingId)) {
                 is AppResult.Success -> {
-        uiState = uiState.copy(listing = result.data, inCart = cartRepository.isInCart(result.data.id))
+                    uiState = uiState.copy(
+                        listing = result.data,
+                        inCart = cartRepository.isInCart(result.data.id)
+                    )
                     // Now fetch the seller using sellerId from listing
                     loadSeller(result.data.sellerId)
                 }
@@ -104,7 +135,8 @@ data class ItemDetailUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val inCart: Boolean = false,
-    val cartAddedEvent: Int = 0
+    val cartAddedEvent: Int = 0,
+    val isFavorite: Boolean = false
 ) {
     val isBuyer: Boolean get() = currentUser?.userType == "BUYER"
 }

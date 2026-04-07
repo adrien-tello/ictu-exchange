@@ -1,6 +1,7 @@
 package com.fanyiadrien.ictu_ex.feature.post
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +35,7 @@ class PostItemViewModel @Inject constructor(
     fun onPriceChanged(value: String)       { uiState = uiState.copy(price = value, errorMessage = null) }
     fun onCategorySelected(cat: ListingCategory) { uiState = uiState.copy(selectedCategory = cat) }
     fun onImageSelected(uri: Uri)           { uiState = uiState.copy(selectedImageUri = uri, errorMessage = null) }
+    fun onShareOnFacebookChanged(value: Boolean) { uiState = uiState.copy(shareOnFacebook = value) }
     fun clearError()                        { uiState = uiState.copy(errorMessage = null) }
 
     /**
@@ -42,7 +44,8 @@ class PostItemViewModel @Inject constructor(
      *   2. Upload image to Cloudinary
      *   3. Save listing to Firestore
      *   4. Fire-and-forget buyer notifications (never blocks or crashes the pipeline)
-     *   5. Call onSuccess — caller navigates away
+     *   5. Optional: Share to Facebook
+     *   6. Call onSuccess — caller navigates away
      */
     fun postListing(context: Context, onSuccess: () -> Unit) {
         // ── Validate ──────────────────────────────────────────────────────────
@@ -81,6 +84,11 @@ class PostItemViewModel @Inject constructor(
             // ── Step 2: Save listing to Firestore ─────────────────────────────
             uiState = uiState.copy(isUploading = false, isSaving = true)
 
+            val sellerName = when (val u = userRepository.getCurrentUser()) {
+                is AppResult.Success -> u.data.displayName
+                else -> "A seller"
+            }
+            
             val sellerStudentId = when (val u = userRepository.getCurrentUser()) {
                 is AppResult.Success -> u.data.studentId
                 else -> ""
@@ -100,20 +108,22 @@ class PostItemViewModel @Inject constructor(
                 is AppResult.Success -> {
                     uiState = uiState.copy(isSaving = false)
 
-                    // ── Step 3: Notify buyers — fire-and-forget, never blocks ──
-                    // Wrapped in its own launch so any exception here does NOT
-                    // prevent navigation or leave the UI locked.
+                    // ── Step 3: Notify buyers ─────────────────────────────────
                     viewModelScope.launch {
                         runCatching {
                             notificationRepository.notifyBuyersNewListing(
                                 sellerId     = saveResult.data.sellerId,
-                                sellerName   = sellerStudentId.ifBlank { "A seller" },
+                                sellerName   = sellerName,
                                 listingTitle = saveResult.data.title,
                                 listingId    = saveResult.data.id,
                                 priceXaf     = saveResult.data.price
                             )
                         }
-                        // Silently ignore notification errors — listing is already saved
+                    }
+
+                    // ── Step 4: Share to Facebook if requested ────────────────
+                    if (uiState.shareOnFacebook) {
+                        shareToFacebook(context, saveResult.data)
                     }
 
                     // Navigate away immediately after save succeeds
@@ -126,6 +136,29 @@ class PostItemViewModel @Inject constructor(
             }
         }
     }
+
+    private fun shareToFacebook(context: Context, listing: Listing) {
+        val shareText = "Check out this ${listing.title} on ICTU-Ex for XAF ${listing.price.toInt()}! \n\n${listing.description}"
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            // Target Facebook specifically if possible, otherwise show chooser
+            setPackage("com.facebook.katana")
+        }
+        
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // Facebook app not installed, fallback to generic share
+            val fallbackIntent = Intent.createChooser(Intent().apply {
+                action = Intent.ACTION_SEND
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, shareText)
+            }, "Share your listing")
+            fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(fallbackIntent)
+        }
+    }
 }
 
 data class PostItemUiState(
@@ -134,6 +167,7 @@ data class PostItemUiState(
     val price: String = "",
     val selectedCategory: ListingCategory = ListingCategory.TEXTBOOKS,
     val selectedImageUri: Uri? = null,
+    val shareOnFacebook: Boolean = false,
     val isUploading: Boolean = false,
     val isSaving: Boolean = false,
     val errorMessage: String? = null

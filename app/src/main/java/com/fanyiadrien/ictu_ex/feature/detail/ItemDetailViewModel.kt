@@ -69,6 +69,12 @@ class ItemDetailViewModel @Inject constructor(
         uiState.listing?.let {
             cartRepository.addListing(it)
             uiState = uiState.copy(inCart = true, cartAddedEvent = uiState.cartAddedEvent + 1)
+            viewModelScope.launch {
+                notificationRepository.notifyBuyerCartAdded(
+                    listingId = it.id,
+                    itemSummary = "${it.title} added to cart"
+                )
+            }
         }
     }
 

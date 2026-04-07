@@ -225,7 +225,7 @@ private fun SearchProductCard(
                     Icon(
                         imageVector = if (isSaved) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         contentDescription = null,
-                        tint = if (isSaved) Color.Red else Color.Black,
+                        tint = if (isSaved) Color(0xFF8E24AA) else Color.Black,
                         modifier = Modifier.size(18.dp)
                     )
                 }

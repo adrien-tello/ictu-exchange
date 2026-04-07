@@ -166,6 +166,34 @@ fun PostItemScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
 
+                // ── Share on Facebook ─────────────────────────────────────
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !uiState.isLocked) {
+                            viewModel.onShareOnFacebookChanged(!uiState.shareOnFacebook)
+                        },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = uiState.shareOnFacebook,
+                        onCheckedChange = { viewModel.onShareOnFacebookChanged(it) },
+                        enabled = !uiState.isLocked
+                    )
+                    Text(
+                        text = "Share listing to Facebook",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        Icons.Rounded.Share,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 // ── Error message ─────────────────────────────────────────
                 uiState.errorMessage?.let { error ->
                     Row(

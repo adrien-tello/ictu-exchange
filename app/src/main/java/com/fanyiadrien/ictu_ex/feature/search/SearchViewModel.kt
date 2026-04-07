@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.fanyiadrien.ictu_ex.data.model.Listing
 import com.fanyiadrien.ictu_ex.data.model.ListingCategory
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
+import com.fanyiadrien.ictu_ex.data.repository.NotificationRepository
 import com.fanyiadrien.ictu_ex.data.repository.WishlistRepository
 import com.fanyiadrien.ictu_ex.utils.AppResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val listingRepository: ListingRepository,
-    private val wishlistRepository: WishlistRepository
+    private val wishlistRepository: WishlistRepository,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
 
     var uiState by mutableStateOf(SearchUiState())
@@ -30,17 +32,28 @@ class SearchViewModel @Inject constructor(
 
     private fun loadWishlist() {
         viewModelScope.launch {
-            val ids = wishlistRepository.getWishlistedIds()
-            uiState = uiState.copy(wishlistedIds = ids.toSet())
+            wishlistRepository.observeWishlistedIds().collect { ids ->
+                uiState = uiState.copy(wishlistedIds = ids)
+            }
         }
     }
 
     fun toggleWishlist(listingId: String) {
         viewModelScope.launch {
-            val isAdded = wishlistRepository.toggleWishlist(listingId)
-            val current = uiState.wishlistedIds.toMutableSet()
-            if (isAdded) current.add(listingId) else current.remove(listingId)
-            uiState = uiState.copy(wishlistedIds = current)
+            val listing = uiState.allListings.find { it.id == listingId }
+            val wasAdded = wishlistRepository.toggleWishlist(listingId)
+            
+            if (wasAdded && listing != null) {
+                // Send notification when added
+                val userId = wishlistRepository.getCurrentUserId()
+                if (userId != null) {
+                    notificationRepository.notifyUserItemFavorited(
+                        userId = userId,
+                        listingId = listingId,
+                        listingTitle = listing.title
+                    )
+                }
+            }
         }
     }
 

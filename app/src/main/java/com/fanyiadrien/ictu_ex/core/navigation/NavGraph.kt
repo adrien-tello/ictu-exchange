@@ -24,6 +24,7 @@ import com.fanyiadrien.ictu_ex.feature.profile.EditProfileScreen
 import com.fanyiadrien.ictu_ex.feature.profile.ProfileScreen
 import com.fanyiadrien.ictu_ex.feature.search.SearchScreen
 import com.fanyiadrien.ictu_ex.feature.settings.SettingScreen
+import com.fanyiadrien.ictu_ex.feature.wishlist.WishlistScreen
 import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 import com.google.firebase.auth.FirebaseAuth
 
@@ -118,6 +119,10 @@ fun NavGraph(
 
         composable(Screen.Notifications.route) {
             NotificationScreen(navController = navController)
+        }
+
+        composable(Screen.Wishlist.route) {
+            WishlistScreen(navController = navController)
         }
 
         // ── Chat list (all conversations) ─────────────────────────────────────

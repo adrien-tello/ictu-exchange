@@ -151,6 +151,27 @@ class NotificationRepository @Inject constructor(
             )).await()
     }
 
+    /**
+     * Notify user that they added an item to their favorites.
+     */
+    suspend fun notifyUserItemFavorited(
+        userId: String,
+        listingId: String,
+        listingTitle: String
+    ) {
+        val notifId = UUID.randomUUID().toString()
+        firestore.collection("notifications")
+            .document(userId).collection("items").document(notifId)
+            .set(mapOf(
+                "notifId"     to notifId,
+                "type"        to "ITEM_FAVORITED",
+                "listingId"   to listingId,
+                "itemSummary" to "You added \"$listingTitle\" to your favorites.",
+                "read"        to false,
+                "createdAt"   to System.currentTimeMillis()
+            )).await()
+    }
+
     // ── Mark read / delete ────────────────────────────────────────────────────
 
     suspend fun markAsRead(notifId: String) {

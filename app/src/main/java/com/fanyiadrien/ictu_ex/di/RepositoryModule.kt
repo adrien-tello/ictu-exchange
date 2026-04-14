@@ -1,11 +1,7 @@
 package com.fanyiadrien.ictu_ex.di
 
-import com.fanyiadrien.ictu_ex.data.repository.CartRepository
-import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
-import com.fanyiadrien.ictu_ex.data.repository.MessagesRepository
-import com.fanyiadrien.ictu_ex.data.repository.NotificationRepository
-import com.fanyiadrien.ictu_ex.data.repository.UserRepository
-import com.fanyiadrien.ictu_ex.data.repository.WishlistRepository
+import com.fanyiadrien.ictu_ex.data.remote.EmailService
+import com.fanyiadrien.ictu_ex.data.repository.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.components.SingletonComponent
@@ -23,8 +19,9 @@ object RepositoryModule {
     fun provideCartRepository(
         auth: FirebaseAuth,
         firestore: FirebaseFirestore,
-        notificationRepository: NotificationRepository
-    ): CartRepository = CartRepository(auth, firestore, notificationRepository)
+        notificationRepository: NotificationRepository,
+        emailService: EmailService
+    ): CartRepository = CartRepository(auth, firestore, notificationRepository, emailService)
 
     @Provides
     @Singleton
@@ -51,8 +48,9 @@ object RepositoryModule {
     @Singleton
     fun provideMessagesRepository(
         auth: FirebaseAuth,
-        firestore: FirebaseFirestore
-    ): MessagesRepository = MessagesRepository(auth, firestore)
+        firestore: FirebaseFirestore,
+        emailService: EmailService
+    ): MessagesRepository = MessagesRepository(auth, firestore, emailService)
 
     @Provides
     @Singleton

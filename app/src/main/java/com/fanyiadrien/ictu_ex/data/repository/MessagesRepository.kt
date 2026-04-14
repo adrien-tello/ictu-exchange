@@ -3,6 +3,7 @@ package com.fanyiadrien.ictu_ex.data.repository
 import com.fanyiadrien.ictu_ex.data.model.ChatMessage
 import com.fanyiadrien.ictu_ex.data.model.ChatThread
 import com.fanyiadrien.ictu_ex.data.model.User
+import com.fanyiadrien.ictu_ex.data.remote.EmailService
 import com.fanyiadrien.ictu_ex.utils.AppError
 import com.fanyiadrien.ictu_ex.utils.AppResult
 import com.google.firebase.auth.FirebaseAuth
@@ -19,7 +20,8 @@ import javax.inject.Singleton
 @Singleton
 class MessagesRepository @Inject constructor(
     private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val emailService: EmailService
 ) {
 
     private val chatsCollection = firestore.collection("chats")
@@ -157,6 +159,20 @@ class MessagesRepository @Inject constructor(
             )
             if (!receiverId.isNullOrBlank()) {
                 updates["unreadCountByUser.$receiverId"] = FieldValue.increment(1)
+                
+                // ── Send Email Alert ──────────────────────────────────────
+                try {
+                    val me = firestore.collection("users").document(uid).get().await()
+                    val other = firestore.collection("users").document(receiverId).get().await()
+                    val otherEmail = other.getString("email")
+                    if (!otherEmail.isNullOrBlank()) {
+                        emailService.sendMessageAlert(
+                            recipientEmail = otherEmail,
+                            senderName = me.getString("displayName") ?: "A student",
+                            messageSnippet = text.take(60) + if (text.length > 60) "..." else ""
+                        )
+                    }
+                } catch (e: Exception) { /* ignore email failures */ }
             }
             threadRef.update(updates).await()
 
@@ -195,6 +211,20 @@ class MessagesRepository @Inject constructor(
             )
             if (!receiverId.isNullOrBlank()) {
                 updates["unreadCountByUser.$receiverId"] = FieldValue.increment(1)
+
+                // ── Send Email Alert ──────────────────────────────────────
+                try {
+                    val me = firestore.collection("users").document(uid).get().await()
+                    val other = firestore.collection("users").document(receiverId).get().await()
+                    val otherEmail = other.getString("email")
+                    if (!otherEmail.isNullOrBlank()) {
+                        emailService.sendMessageAlert(
+                            recipientEmail = otherEmail,
+                            senderName = me.getString("displayName") ?: "A student",
+                            messageSnippet = "sent you a photo."
+                        )
+                    }
+                } catch (e: Exception) { /* ignore email failures */ }
             }
             threadRef.update(updates).await()
 
@@ -211,4 +241,3 @@ class MessagesRepository @Inject constructor(
             .await()
     }
 }
-

@@ -21,28 +21,29 @@ sealed class Screen(val route: String) {
     object Cart          : Screen("cart")
     object Notifications : Screen("notifications")
 
-    // Chat list — shows all conversations the current user is part of
     object ChatList : Screen("chat_list")
 
-    // Individual chat — opened directly with a threadId
     object Chat : Screen("chat/{threadId}") {
         fun createRoute(threadId: String) = "chat/$threadId"
     }
 
-    // Legacy deep-link entry: open/create a thread from ItemDetail then go to Chat
     object Messages : Screen("messages") {
         const val sellerIdArg  = "sellerId"
         const val listingIdArg = "listingId"
-        const val routeWithArgs = "messages?$sellerIdArg={$sellerIdArg}&$listingIdArg={$listingIdArg}"
+        const val routeWithArgs = "messages?sellerId={sellerId}&listingId={listingId}"
         fun createRoute(sellerId: String? = null, listingId: String? = null): String {
-            val params = buildList {
-                if (!sellerId.isNullOrBlank())  add("$sellerIdArg=$sellerId")
-                if (!listingId.isNullOrBlank()) add("$listingIdArg=$listingId")
-            }
-            return if (params.isEmpty()) route else "$route?${params.joinToString("&")}"
+            val params = mutableListOf<String>()
+            if (!sellerId.isNullOrBlank()) params.add("sellerId=$sellerId")
+            if (!listingId.isNullOrBlank()) params.add("listingId=$listingId")
+
+            return if (params.isEmpty()) "messages" else "messages?${params.joinToString("&")}"
         }
     }
     object MyActivity    : Screen("my_activity")
+
+    object OrderSuccess : Screen("order_success/{orderId}") {
+        fun createRoute(orderId: String) = "order_success/$orderId"
+    }
 
     object ItemDetail : Screen("item_detail/{listingId}") {
         fun createRoute(listingId: String) = "item_detail/$listingId"

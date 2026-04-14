@@ -2,7 +2,7 @@ package com.fanyiadrien.ictu_ex.data.repository
 
 import com.fanyiadrien.ictu_ex.data.model.CartItem
 import com.fanyiadrien.ictu_ex.data.model.Listing
-import com.fanyiadrien.ictu_ex.data.repository.NotificationRepository
+import com.fanyiadrien.ictu_ex.data.remote.EmailService
 import com.fanyiadrien.ictu_ex.utils.AppError
 import com.fanyiadrien.ictu_ex.utils.AppResult
 import com.google.firebase.auth.FirebaseAuth
@@ -20,20 +20,17 @@ import javax.inject.Singleton
 class CartRepository @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
+    private val emailService: EmailService
 ) {
 
-    // ── Shared cart state (survives screen navigation) ────────────────────────
     private val _items = MutableStateFlow<List<CartItem>>(emptyList())
     val items: StateFlow<List<CartItem>> = _items.asStateFlow()
-
-    // ── Add / remove / quantity ───────────────────────────────────────────────
 
     fun addListing(listing: Listing) {
         _items.update { current ->
             val existing = current.find { it.listingId == listing.id }
             if (existing != null) {
-                // Already in cart — just bump quantity
                 current.map {
                     if (it.listingId == listing.id) it.copy(quantity = it.quantity + 1) else it
                 }
@@ -73,15 +70,6 @@ class CartRepository @Inject constructor(
     fun isInCart(listingId: String): Boolean =
         _items.value.any { it.listingId == listingId }
 
-    // ── Checkout ──────────────────────────────────────────────────────────────
-
-    /**
-     * 1. Writes an order document to Firestore under "orders/{orderId}".
-     * 2. For every unique seller in the cart, writes a notification document
-     *    to "notifications/{sellerId}/items/{notifId}" so the seller's device
-     *    can pick it up via a Firestore listener or FCM data message.
-     * 3. Clears the local cart on success.
-     */
     suspend fun checkout(
         discountPercent: Int,
         promoCode: String
@@ -99,13 +87,25 @@ class CartRepository @Inject constructor(
         val now      = System.currentTimeMillis()
 
         return try {
+            val buyerName = firestore.collection("users").document(buyerId)
+                .get().await().getString("displayName") ?: "A student"
+
+            val sellerItems = mutableMapOf<String, MutableList<CartItem>>()
+            for (item in cartItems) {
+                val sellerId = firestore.collection("listings")
+                    .document(item.listingId).get().await()
+                    .getString("sellerId") ?: continue
+                sellerItems.getOrPut(sellerId) { mutableListOf() }.add(item)
+            }
+
             val batch = firestore.batch()
 
-            // ── 1. Order document ─────────────────────────────────────────
             val orderRef = firestore.collection("orders").document(orderId)
             batch.set(orderRef, mapOf(
                 "orderId"         to orderId,
                 "buyerId"         to buyerId,
+                "buyerName"       to buyerName,
+                "sellerIds"       to sellerItems.keys.toList(),
                 "items"           to cartItems.map { item ->
                     mapOf(
                         "listingId" to item.listingId,
@@ -118,28 +118,15 @@ class CartRepository @Inject constructor(
                 "subtotalXaf"     to subtotal,
                 "discountXaf"     to discount,
                 "totalXaf"        to total,
-                "promoCode"       to promoCode,
                 "status"          to "PENDING",
                 "createdAt"       to now
             ))
             batch.commit().await()
 
-            // ── 2. Fetch buyer name ───────────────────────────────────────
-            val buyerName = firestore.collection("users").document(buyerId)
-                .get().await().getString("displayName") ?: "A student"
-
-            // ── 3. Group items by seller, notify each seller ──────────────
-            val sellerItems = mutableMapOf<String, MutableList<CartItem>>()
-            for (item in cartItems) {
-                val sellerId = firestore.collection("listings")
-                    .document(item.listingId).get().await()
-                    .getString("sellerId") ?: continue
-                sellerItems.getOrPut(sellerId) { mutableListOf() }.add(item)
-            }
-
             for ((sellerId, items) in sellerItems) {
                 val summary = items.joinToString(", ") { "${it.title} ×${it.quantity}" }
                 val sellerTotal = items.sumOf { it.lineTotal }
+                
                 notificationRepository.notifySellerNewOrder(
                     sellerId    = sellerId,
                     buyerId     = buyerId,
@@ -148,9 +135,22 @@ class CartRepository @Inject constructor(
                     itemSummary = summary,
                     totalXaf    = sellerTotal
                 )
+
+                val sellerDoc = firestore.collection("users").document(sellerId).get().await()
+                val sellerEmail = sellerDoc.getString("email")
+                val sellerName = sellerDoc.getString("displayName") ?: "Seller"
+                
+                if (sellerEmail != null) {
+                    emailService.sendOrderConfirmation(
+                        sellerEmail = sellerEmail,
+                        sellerName  = sellerName,
+                        buyerName   = buyerName,
+                        listingTitle = summary,
+                        orderId     = orderId
+                    )
+                }
             }
 
-            // ── 4. Confirm to buyer ───────────────────────────────────────
             val allSummary = cartItems.joinToString(", ") { "${it.title} ×${it.quantity}" }
             notificationRepository.notifyBuyerOrderPlaced(
                 buyerId     = buyerId,
@@ -159,9 +159,7 @@ class CartRepository @Inject constructor(
                 totalXaf    = total
             )
 
-            // ── 5. Clear cart ─────────────────────────────────────────────
             _items.update { emptyList() }
-
             AppResult.Success(orderId)
 
         } catch (e: Exception) {

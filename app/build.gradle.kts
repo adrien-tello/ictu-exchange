@@ -20,8 +20,8 @@ android {
         applicationId = "com.fanyiadrien.ictu_ex"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -36,6 +36,9 @@ android {
             "CLOUDINARY_API_SECRET",
             "\"${localProps["CLOUDINARY_API_SECRET"]}\""
         )
+
+        buildConfigField("String", "RESEND_API_KEY", "\"${localProps["RESEND_API_KEY"]}\"")
+        buildConfigField("String", "RESEND_DOMAIN", "\"${localProps["RESEND_DOMAIN"]}\"")
     }
 
     buildTypes {

@@ -13,6 +13,7 @@ import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
 import com.fanyiadrien.ictu_ex.feature.cart.CartScreen
+import com.fanyiadrien.ictu_ex.feature.cart.OrderSuccessScreen
 import com.fanyiadrien.ictu_ex.feature.detail.ItemDetailScreen
 import com.fanyiadrien.ictu_ex.feature.home.HomeScreen
 import com.fanyiadrien.ictu_ex.feature.messages.ChatListScreen
@@ -117,6 +118,14 @@ fun NavGraph(
             CartScreen(navController = navController)
         }
 
+        composable(
+            route = Screen.OrderSuccess.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            OrderSuccessScreen(navController = navController, orderId = orderId)
+        }
+
         composable(Screen.Notifications.route) {
             NotificationScreen(navController = navController)
         }
@@ -125,12 +134,10 @@ fun NavGraph(
             WishlistScreen(navController = navController)
         }
 
-        // ── Chat list (all conversations) ─────────────────────────────────────
         composable(Screen.ChatList.route) {
             ChatListScreen(navController = navController)
         }
 
-        // ── Individual chat (opened from ChatList by threadId) ────────────────
         composable(
             route     = Screen.Chat.route,
             arguments = listOf(navArgument("threadId") { type = NavType.StringType })
@@ -138,7 +145,6 @@ fun NavGraph(
             ChatScreen(navController = navController)
         }
 
-        // ── Deep-link: open/create thread from ItemDetail (sellerId + listingId)
         composable(
             route = Screen.Messages.routeWithArgs,
             arguments = listOf(

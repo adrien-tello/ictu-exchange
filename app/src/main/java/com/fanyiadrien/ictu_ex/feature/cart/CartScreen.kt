@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.ui.theme.*
+import java.util.*
 
 @Composable
 fun CartScreen(
@@ -50,11 +52,10 @@ fun CartScreen(
         }
     }
 
-    // Navigate back to Home after successful checkout
     LaunchedEffect(state.checkoutOrderId) {
-        if (state.checkoutOrderId != null) {
-            navController.navigate(com.fanyiadrien.ictu_ex.core.navigation.Screen.Home.route) {
-                popUpTo(com.fanyiadrien.ictu_ex.core.navigation.Screen.Home.route) { inclusive = true }
+        state.checkoutOrderId?.let { orderId ->
+            navController.navigate(Screen.OrderSuccess.createRoute(orderId)) {
+                popUpTo(Screen.Cart.route) { inclusive = true }
             }
         }
     }
@@ -79,7 +80,7 @@ fun CartScreen(
         }
     ) { padding ->
 
-        if (state.items.isEmpty()) {
+        if (state.items.isEmpty() && state.checkoutOrderId == null) {
             EmptyCartState(
                 modifier = Modifier
                     .fillMaxSize()
@@ -93,7 +94,6 @@ fun CartScreen(
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
 
-                // ── Cart items ────────────────────────────────────────────
                 itemsIndexed(
                     items = state.items,
                     key   = { _, item -> item.id }
@@ -119,7 +119,6 @@ fun CartScreen(
                     }
                 }
 
-                // ── Promo code ────────────────────────────────────────────
                 item {
                     Spacer(Modifier.height(8.dp))
                     HorizontalDivider(
@@ -140,7 +139,6 @@ fun CartScreen(
                     )
                 }
 
-                // ── Price breakdown ───────────────────────────────────────
                 item {
                     PriceBreakdown(
                         subtotal        = state.subtotal,
@@ -154,7 +152,6 @@ fun CartScreen(
     }
 }
 
-// ── Top bar ───────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CartTopBar(
@@ -177,29 +174,17 @@ private fun CartTopBar(
         },
         navigationIcon = {
             IconButton(onClick = onClose) {
-                Icon(
-                    Icons.Rounded.Close,
-                    contentDescription = "Close cart",
-                    tint               = MaterialTheme.colorScheme.onBackground
-                )
+                Icon(Icons.Rounded.Close, "Close", tint = MaterialTheme.colorScheme.onBackground)
             }
         },
         actions = {
             IconButton(onClick = onShare) {
-                Icon(
-                    Icons.Rounded.IosShare,
-                    contentDescription = "Share cart",
-                    tint               = MaterialTheme.colorScheme.onBackground
-                )
+                Icon(Icons.Rounded.IosShare, "Share", tint = MaterialTheme.colorScheme.onBackground)
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background
-        )
+        }
     )
 }
 
-// ── Promo code section ────────────────────────────────────────────────────────
 @Composable
 private fun PromoCodeSection(
     code: String,
@@ -208,275 +193,62 @@ private fun PromoCodeSection(
     onApply: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
-
     Row(
-        modifier          = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+        modifier          = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            Icons.Rounded.LocalOffer,
-            contentDescription = null,
-            tint               = if (applied) MaterialTheme.colorScheme.tertiary
-                                 else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier           = Modifier.size(20.dp)
-        )
-
+        Icon(Icons.Rounded.LocalOffer, null, tint = if (applied) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(12.dp))
-
         OutlinedTextField(
-            value         = code,
-            onValueChange = onCodeChange,
-            placeholder   = {
-                Text(
-                    "Promo code",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            singleLine    = true,
-            modifier      = Modifier.weight(1f),
-            shape         = RoundedCornerShape(10.dp),
-            colors        = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor   = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-            ),
-            textStyle     = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Medium
-            ),
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Characters,
-                imeAction      = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(onDone = {
-                focusManager.clearFocus()
-                onApply()
-            }),
-            trailingIcon  = if (applied) ({
-                Icon(
-                    Icons.Rounded.CheckCircle,
-                    contentDescription = "Promo applied",
-                    tint               = MaterialTheme.colorScheme.tertiary,
-                    modifier           = Modifier.size(18.dp)
-                )
-            }) else null
+            value = code, onValueChange = onCodeChange,
+            placeholder = { Text("Promo code") },
+            singleLine = true, modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(10.dp),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus(); onApply() })
         )
-
-        Spacer(Modifier.width(10.dp))
-
-        TextButton(
-            onClick  = {
-                focusManager.clearFocus()
-                onApply()
-            },
-            modifier = Modifier.height(48.dp),
-            colors   = ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary
-            )
-        ) {
-            Text(
-                "Apply",
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-            )
-        }
-    }
-}
-
-// ── Price breakdown ───────────────────────────────────────────────────────────
-@Composable
-private fun PriceBreakdown(
-    subtotal: Double,
-    discount: Double,
-    total: Double,
-    discountPercent: Int
-) {
-    Column(
-        modifier            = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        // Subtotal row
-        PriceRow(
-            label = "Subtotal",
-            value = formatXaf(subtotal),
-            bold  = false
-        )
-
-        // Discount row — only shown when a promo is active
-        if (discountPercent > 0) {
-            PriceRow(
-                label      = "Discount ($discountPercent%)",
-                value      = "− ${formatXaf(discount)}",
-                bold       = false,
-                valueColor = MaterialTheme.colorScheme.tertiary
-            )
-        }
-
-        HorizontalDivider(
-            thickness = 0.8.dp,
-            color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        // Total row
-        PriceRow(
-            label = "Total",
-            value = formatXaf(total),
-            bold  = true
-        )
+        TextButton(onClick = onApply) { Text("Apply", fontWeight = FontWeight.Bold) }
     }
 }
 
 @Composable
-private fun PriceRow(
-    label: String,
-    value: String,
-    bold: Boolean,
-    valueColor: Color = Color.Unspecified
-) {
-    val resolvedColor = if (valueColor == Color.Unspecified)
-        MaterialTheme.colorScheme.onBackground else valueColor
-
-    Row(
-        modifier              = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment     = Alignment.CenterVertically
-    ) {
-        Text(
-            text  = label,
-            style = if (bold)
-                MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-            else
-                MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text  = value,
-            style = if (bold)
-                MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize   = 18.sp
-                )
-            else
-                MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-            color = if (bold) MaterialTheme.colorScheme.primary else resolvedColor
-        )
+private fun PriceBreakdown(subtotal: Double, discount: Double, total: Double, discountPercent: Int) {
+    Column(modifier = Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        PriceRow("Subtotal", formatXaf(subtotal), false)
+        if (discountPercent > 0) PriceRow("Discount ($discountPercent%)", "− ${formatXaf(discount)}", false, MaterialTheme.colorScheme.tertiary)
+        HorizontalDivider(thickness = 0.8.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        PriceRow("Total", formatXaf(total), true)
     }
 }
 
-// ── Checkout sticky bottom bar ────────────────────────────────────────────────
 @Composable
-private fun CartCheckoutBar(
-    total: Double,
-    itemCount: Int,
-    isLoading: Boolean,
-    onClick: () -> Unit
-) {
-    val gradient = Brush.horizontalGradient(listOf(Purple30, Purple40))
+private fun PriceRow(label: String, value: String, bold: Boolean, color: Color = Color.Unspecified) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = if (bold) MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.bodyMedium)
+        Text(value, style = if (bold) MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold) else MaterialTheme.typography.bodyMedium, color = if (bold) MaterialTheme.colorScheme.primary else color)
+    }
+}
 
-    Surface(
-        shadowElevation = 12.dp,
-        color           = MaterialTheme.colorScheme.surface
-    ) {
-        Row(
-            modifier          = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // Price summary
+@Composable
+private fun CartCheckoutBar(total: Double, itemCount: Int, isLoading: Boolean, onClick: () -> Unit) {
+    Surface(shadowElevation = 12.dp, color = MaterialTheme.colorScheme.surface) {
+        Row(modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text  = "$itemCount item${if (itemCount != 1) "s" else ""}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text  = formatXaf(total),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.ExtraBold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Text("$itemCount items", style = MaterialTheme.typography.labelSmall)
+                Text(formatXaf(total), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
             }
-
-            // Checkout button
-            Box(
-                modifier = Modifier
-                    .height(50.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(gradient)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication        = ripple(color = Color.White.copy(alpha = 0.3f)),
-                        enabled           = !isLoading,
-                        onClick           = onClick
-                    )
-                    .padding(horizontal = 28.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier    = Modifier.size(22.dp),
-                        color       = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Row(
-                        verticalAlignment      = Alignment.CenterVertically,
-                        horizontalArrangement  = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text  = "Checkout",
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize   = 15.sp
-                            ),
-                            color = Color.White
-                        )
-                        Icon(
-                            Icons.Rounded.ArrowForward,
-                            contentDescription = null,
-                            tint               = Color.White,
-                            modifier           = Modifier.size(16.dp)
-                        )
-                    }
-                }
+            Button(onClick = onClick, enabled = !isLoading, modifier = Modifier.height(50.dp).padding(horizontal = 12.dp)) {
+                if (isLoading) CircularProgressIndicator(Modifier.size(20.dp), Color.White)
+                else Text("Checkout", fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
 @Composable
-private fun EmptyCartState(modifier: Modifier = Modifier) {
-    Column(
-        modifier            = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            Icons.Rounded.ShoppingCartCheckout,
-            contentDescription = null,
-            modifier           = Modifier.size(80.dp),
-            tint               = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
-        )
-        Spacer(Modifier.height(20.dp))
-        Text(
-            "Your cart is empty",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Browse listings and add items to get started.",
-            style    = MaterialTheme.typography.bodyMedium,
-            color    = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 40.dp)
-        )
+private fun EmptyCartState(modifier: Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Icon(Icons.Rounded.ShoppingCartCheckout, null, Modifier.size(80.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.35f))
+        Text("Your cart is empty", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
     }
 }

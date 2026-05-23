@@ -14,7 +14,7 @@ import javax.inject.Singleton
 private const val TAG = "ListingRepository"
 
 @Singleton
-class ListingRepository @Inject constructor(
+open class ListingRepository @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore
 ) {
@@ -24,7 +24,7 @@ class ListingRepository @Inject constructor(
     /**
      * Fetches all available listings, newest first.
      */
-    suspend fun getAllListings(): AppResult<List<Listing>> {
+    open suspend fun getAllListings(): AppResult<List<Listing>> {
         return try {
             val snapshot = listingsCollection
                 .whereEqualTo("available", true)
@@ -44,7 +44,7 @@ class ListingRepository @Inject constructor(
     /**
      * Fetches a single listing by its Firestore document ID.
      */
-    suspend fun getListingById(listingId: String): AppResult<Listing> {
+    open suspend fun getListingById(listingId: String): AppResult<Listing> {
         return try {
             val doc = listingsCollection.document(listingId).get().await()
             val listing = doc.toObject(Listing::class.java)?.copy(id = doc.id)
@@ -58,7 +58,7 @@ class ListingRepository @Inject constructor(
     /**
      * Posts a new listing to Firestore.
      */
-    suspend fun postListing(listing: Listing): AppResult<Listing> {
+    open suspend fun postListing(listing: Listing): AppResult<Listing> {
         val uid = auth.currentUser?.uid
             ?: return AppResult.Error(AppError.UNKNOWN_AUTH_ERROR)
 
@@ -79,7 +79,7 @@ class ListingRepository @Inject constructor(
     /**
      * Updates an existing listing in Firestore.
      */
-    suspend fun updateListing(listing: Listing): AppResult<Unit> {
+    open suspend fun updateListing(listing: Listing): AppResult<Unit> {
         return try {
             listingsCollection.document(listing.id)
                 .set(listing)
@@ -93,7 +93,7 @@ class ListingRepository @Inject constructor(
     /**
      * Marks a listing as sold/unavailable.
      */
-    suspend fun markListingUnavailable(listingId: String): AppResult<Unit> {
+    open suspend fun markListingUnavailable(listingId: String): AppResult<Unit> {
         return try {
             listingsCollection.document(listingId)
                 .update("available", false)
@@ -107,7 +107,7 @@ class ListingRepository @Inject constructor(
     /**
      * Deletes a listing from Firestore.
      */
-    suspend fun deleteListing(listingId: String): AppResult<Unit> {
+    open suspend fun deleteListing(listingId: String): AppResult<Unit> {
         return try {
             listingsCollection.document(listingId).delete().await()
             AppResult.Success(Unit)
@@ -119,7 +119,7 @@ class ListingRepository @Inject constructor(
     /**
      * Fetches all listings posted by the current logged-in seller.
      */
-    suspend fun getMyListings(): AppResult<List<Listing>> {
+    open suspend fun getMyListings(): AppResult<List<Listing>> {
         val uid = auth.currentUser?.uid
             ?: return AppResult.Error(AppError.UNKNOWN_AUTH_ERROR)
 

@@ -32,13 +32,6 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideListingRepository(
-        auth: FirebaseAuth,
-        firestore: FirebaseFirestore
-    ): ListingRepository = ListingRepository(auth, firestore)
-
-    @Provides
-    @Singleton
     fun provideNotificationRepository(
         auth: FirebaseAuth,
         firestore: FirebaseFirestore

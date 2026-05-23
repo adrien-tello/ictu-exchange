@@ -324,8 +324,10 @@ fun SignUpScreen(
                                     studentId = studentId,
                                     userType = userType,
                                     onSuccess = {
-                                        navController.navigate(Screen.Home.route) {
-                                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                        navController.navigate(
+                                            Screen.OtpVerification.createRoute(email)
+                                        ) {
+                                            popUpTo(Screen.SignUp.route) { inclusive = true }
                                         }
                                     }
                                 )

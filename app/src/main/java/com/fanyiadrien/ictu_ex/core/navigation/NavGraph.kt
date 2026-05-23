@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.fanyiadrien.ictu_ex.core.camera.CameraScreen
 import com.fanyiadrien.ictu_ex.feature.activity.MyActivityScreen
+import com.fanyiadrien.ictu_ex.feature.auth.OtpVerificationScreen
 import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
@@ -57,6 +58,13 @@ fun NavGraph(
 
         composable(Screen.SignIn.route) {
             SignInScreen(navController = navController)
+        }
+
+        composable(
+            route     = Screen.OtpVerification.route,
+            arguments = listOf(navArgument("email") { type = NavType.StringType })
+        ) {
+            OtpVerificationScreen(navController = navController)
         }
 
         composable(Screen.Home.route) {

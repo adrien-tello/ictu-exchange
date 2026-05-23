@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fanyiadrien.ictu_ex.data.remote.spring.SpringAuthRepository
 import com.fanyiadrien.ictu_ex.data.repository.AuthRepository
 import com.fanyiadrien.ictu_ex.utils.AppResult
 import dagger.hilt.android.lifecycle.HiltViewModel

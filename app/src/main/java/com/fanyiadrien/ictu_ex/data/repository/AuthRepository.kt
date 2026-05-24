@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AuthRepository @Inject constructor(
+open class AuthRepository @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore
 ) {
@@ -25,7 +25,7 @@ class AuthRepository @Inject constructor(
      * ICTU-Ex rule: only @ictuniversity.edu.cm emails are allowed.
      * Called before even hitting Firebase — fast, free check.
      */
-    private fun isValidIctuEmail(email: String): Boolean {
+    protected fun isValidIctuEmail(email: String): Boolean {
         return email.trim().endsWith("@ictuniversity.edu.cm")
     }
 
@@ -47,7 +47,7 @@ class AuthRepository @Inject constructor(
      *       is AppResult.Error   -> uiState = uiState.copy(error = result.message)
      *   }
      */
-    suspend fun signUp(
+    open suspend fun signUp(
         email: String,
         password: String,
         displayName: String,
@@ -113,7 +113,7 @@ class AuthRepository @Inject constructor(
      *       is AppResult.Error   -> uiState = uiState.copy(error = result.message)
      *   }
      */
-    suspend fun signIn(
+    open suspend fun signIn(
         email: String,
         password: String
     ): AppResult<User> {
@@ -156,10 +156,10 @@ class AuthRepository @Inject constructor(
     // ─── Session ──────────────────────────────────────────────────────────────
 
     /** Returns true if a user is already logged in. Use in MainActivity to skip onboarding. */
-    fun isUserLoggedIn(): Boolean = auth.currentUser != null
+    open fun isUserLoggedIn(): Boolean = auth.currentUser != null
 
     /** Signs out the current user. */
-    fun signOut() = auth.signOut()
+    open fun signOut() = auth.signOut()
 
     /** Returns the current logged-in user's UID, or null if not logged in. */
     fun currentUserId(): String? = auth.currentUser?.uid

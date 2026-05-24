@@ -10,7 +10,12 @@ plugins {
 }
 
 val localProps = Properties()
-localProps.load(rootProject.file("local.properties").inputStream())
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProps.load(localPropertiesFile.inputStream())
+}
+
+val useSpringBackend = localProps.getProperty("useSpringBackend", "false").toBoolean()
 
 android {
     namespace = "com.fanyiadrien.ictu_ex"
@@ -25,6 +30,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        buildConfigField("boolean", "USE_SPRING_BACKEND", "$useSpringBackend")
+
+        val springBaseUrl = localProps.getProperty("SPRING_BASE_URL", "https://api.ictuex.teamnest.me/")
+        buildConfigField("String", "SPRING_BASE_URL", "\"$springBaseUrl\"")
         buildConfigField(
             "String",
             "CLOUDINARY_CLOUD_NAME",
@@ -95,7 +104,13 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    
+    // Retrofit + Moshi for Spring Boot calls
     implementation(libs.retrofit)
+    implementation(libs.retrofit.moshi)
+    implementation(libs.moshi.kotlin)
+    ksp(libs.moshi.compiler)
+
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp.logging)
 

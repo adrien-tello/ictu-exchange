@@ -9,6 +9,9 @@ sealed class Screen(val route: String) {
         fun createRoute(userType: String) = "sign_up/$userType"
     }
     object SignIn : Screen("sign_in")
+    object OtpVerification : Screen("otp_verification/{email}") {
+        fun createRoute(email: String) = "otp_verification/${java.net.URLEncoder.encode(email, "UTF-8")}"
+    }
 
     object Home          : Screen("home")
     object Search        : Screen("search")

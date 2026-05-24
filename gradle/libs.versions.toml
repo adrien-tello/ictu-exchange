@@ -20,7 +20,8 @@ coreSplashScreen = "1.0.1"
 
 # firebase and cloudinary/cloudflare depencies
 firebaseBom = "32.7.2"
-retrofit = "2.9.0"
+retrofit = "2.11.0"
+moshi = "1.15.1"
 okhttp = "4.12.0"
 cloudinary = "2.3.0"
 
@@ -68,9 +69,12 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth-ktx" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
 
-# Networking (For Cloudflare R2 Uploads)
+# Networking (For Spring Boot REST API)
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
 retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin", version.ref = "moshi" }
+moshi-compiler = { group = "com.squareup.moshi", name = "moshi-kotlin-codegen", version.ref = "moshi" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 
 cloudinary-android = { group = "com.cloudinary", name = "cloudinary-android", version.ref = "cloudinary" }

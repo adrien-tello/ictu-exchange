@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.fanyiadrien.ictu_ex.core.camera.CameraScreen
 import com.fanyiadrien.ictu_ex.feature.activity.MyActivityScreen
+import com.fanyiadrien.ictu_ex.feature.assistant.AssistantScreen
 import com.fanyiadrien.ictu_ex.feature.auth.OtpVerificationScreen
 import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
@@ -169,6 +170,10 @@ fun NavGraph(
 
         composable(Screen.MyActivity.route) {
             MyActivityScreen(navController = navController)
+        }
+
+        composable(Screen.Assistant.route) {
+            AssistantScreen(navController = navController)
         }
     }
 }

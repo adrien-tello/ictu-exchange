@@ -1,6 +1,8 @@
 package com.fanyiadrien.ictu_ex.feature.home
 
-import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -36,6 +38,10 @@ import com.fanyiadrien.ictu_ex.core.ui.components.IctuBottomNav
 import com.fanyiadrien.ictu_ex.data.model.Listing
 import com.fanyiadrien.ictu_ex.data.model.ListingCategory
 import com.fanyiadrien.ictu_ex.data.model.User
+import com.fanyiadrien.ictu_ex.feature.assistant.OrbCore
+import com.fanyiadrien.ictu_ex.feature.assistant.OrbGlow
+import com.fanyiadrien.ictu_ex.feature.assistant.OrbMid
+import com.fanyiadrien.ictu_ex.feature.assistant.components.AssistantOrb
 import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 import java.text.NumberFormat
 import java.util.*
@@ -114,7 +120,15 @@ fun HomeScreen(
                 )
             }
 
-            // ── 4. Categories (Top Brands style) ──────────────────────────
+            // ── 4. AI Assistant Banner ────────────────────────────────────
+            item {
+                AiAssistantBanner(
+                    userName = uiState.currentUser?.displayName?.split(" ")?.firstOrNull() ?: "Student",
+                    onClick  = { navController.navigate(Screen.Assistant.route) }
+                )
+            }
+
+            // ── 5. Categories (Top Brands style) ──────────────────────────
             item {
                 CategorySection(
                     selected = uiState.selectedCategory,
@@ -122,7 +136,7 @@ fun HomeScreen(
                 )
             }
 
-            // ── 5. Main Feed ("For You" style) ────────────────────────────
+            // ── 6. Main Feed ("For You" style) ────────────────────────────
             item { 
                 SectionHeader(
                     title = if (uiState.searchQuery.isNotEmpty()) "Search Results" else "For You"
@@ -495,4 +509,104 @@ private fun EmptyFeedState(isSeller: Boolean, isSearch: Boolean) {
 
 private fun formatPrice(price: Double): String {
     return "XAF " + String.format(Locale.US, "%,.0f", price)
+}
+
+// ── AI Assistant Banner ───────────────────────────────────────────────────────
+@Composable
+private fun AiAssistantBanner(
+    userName: String,
+    onClick: () -> Unit
+) {
+    val isDark      = isSystemInDarkTheme()
+    val inf         = rememberInfiniteTransition(label = "bannerOrb")
+    val glowAlpha by inf.animateFloat(
+        initialValue  = 0.4f, targetValue = 0.85f,
+        animationSpec = infiniteRepeatable(
+            tween(2000, easing = EaseInOutSine),
+            RepeatMode.Reverse
+        ),
+        label = "glow"
+    )
+
+    val gradientColors = if (isDark)
+        listOf(Color(0xFF1A0A2E), Color(0xFF2D1B4E), Color(0xFF1A0A2E))
+    else
+        listOf(Color(0xFFF3EEFF), Color(0xFFEDE7FF), Color(0xFFF3EEFF))
+
+    val borderColor = if (isDark) Color(0x557C3AED) else Color(0xAAC4B5FD)
+    val titleColor  = if (isDark) Color(0xFFF3EEFF) else Color(0xFF4A1D96)
+    val subColor    = if (isDark) Color(0xFFBB86FC) else Color(0xFF7C3AED)
+
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.linearGradient(gradientColors)
+            )
+            .border(1.dp, borderColor, RoundedCornerShape(24.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Animated mini orb
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                OrbGlow.copy(alpha = glowAlpha),
+                                OrbMid.copy(alpha = glowAlpha * 0.6f),
+                                OrbCore.copy(alpha = 0.3f)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                AssistantOrb(size = 44.dp)
+            }
+
+            // Text
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Hey $userName, ask ICTU AI",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = titleColor
+                )
+                Text(
+                    text = "Find deals, get advice, explore campus",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = subColor
+                )
+            }
+
+            // Arrow
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(OrbCore, OrbGlow)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ArrowForward,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
 }

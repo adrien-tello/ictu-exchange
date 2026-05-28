@@ -1,11 +1,13 @@
 package com.fanyiadrien.ictu_ex.di
 
 import com.fanyiadrien.ictu_ex.BuildConfig
+import com.fanyiadrien.ictu_ex.data.model.Listing
 import com.fanyiadrien.ictu_ex.data.remote.spring.RetrofitClient
 import com.fanyiadrien.ictu_ex.data.remote.spring.SpringAuthApi
 import com.fanyiadrien.ictu_ex.data.remote.spring.SpringAuthRepository
 import com.fanyiadrien.ictu_ex.data.remote.spring.SpringListingApi
 import com.fanyiadrien.ictu_ex.data.remote.spring.SpringListingRepository
+import com.fanyiadrien.ictu_ex.data.remote.spring.SpringMessagingApi
 import com.fanyiadrien.ictu_ex.data.remote.spring.TokenStore
 import com.fanyiadrien.ictu_ex.data.repository.AuthRepository
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
@@ -15,16 +17,14 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import okhttp3.OkHttpClient
-import retrofit2.Retrofit
 import javax.inject.Singleton
 
 /**
- * Provides all networking and repository dependencies.
+ * Strategy Pattern switcher.
  *
- * Backend is controlled by local.properties:
- *   useSpringBackend=true   → Spring Boot REST API  (BuildConfig.SPRING_BASE_URL)
- *   useSpringBackend=false  → Firebase Auth + Firestore
+ * BuildConfig.USE_SPRING_BACKEND is read from local.properties:
+ *   useSpringBackend=true  → Spring Boot REST API (https://api.ictuex.teamnest.me)
+ *   useSpringBackend=false → Firebase (original behaviour)
  *
  * To switch: edit local.properties → File → Sync Project with Gradle Files.
  */
@@ -32,41 +32,22 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object ServiceModule {
 
-    // ── Single OkHttpClient ───────────────────────────────────────────────────
+    // ── Retrofit API interfaces ───────────────────────────────────────────────
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(tokenStore: TokenStore): OkHttpClient =
-        RetrofitClient.buildOkHttpClient(tokenStore)
-
-    // ── Single Retrofit instance shared by all API interfaces ─────────────────
+    fun provideSpringAuthApi(tokenStore: TokenStore): SpringAuthApi =
+        RetrofitClient.build(tokenStore).create(SpringAuthApi::class.java)
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit =
-        Retrofit.Builder()
-            .baseUrl(RetrofitClient.BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(
-                retrofit2.converter.moshi.MoshiConverterFactory.create(
-                    com.squareup.moshi.Moshi.Builder()
-                        .addLast(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
-                        .build()
-                )
-            )
-            .build()
-
-    // ── API interfaces ────────────────────────────────────────────────────────
+    fun provideSpringListingApi(tokenStore: TokenStore): SpringListingApi =
+        RetrofitClient.build(tokenStore).create(SpringListingApi::class.java)
 
     @Provides
     @Singleton
-    fun provideSpringAuthApi(retrofit: Retrofit): SpringAuthApi =
-        retrofit.create(SpringAuthApi::class.java)
-
-    @Provides
-    @Singleton
-    fun provideSpringListingApi(retrofit: Retrofit): SpringListingApi =
-        retrofit.create(SpringListingApi::class.java)
+    fun provideSpringMessagingApi(tokenStore: TokenStore): SpringMessagingApi =
+        RetrofitClient.build(tokenStore).create(SpringMessagingApi::class.java)
 
     // ── AuthRepository strategy ───────────────────────────────────────────────
 
@@ -113,14 +94,14 @@ object ServiceModule {
                 override suspend fun getListingById(listingId: String) =
                     springListingRepository.getListingById(listingId)
 
-                override suspend fun getMyListings() =
-                    springListingRepository.getMyListings()
-
-                override suspend fun postListing(listing: com.fanyiadrien.ictu_ex.data.model.Listing) =
+                override suspend fun postListing(listing: Listing) =
                     springListingRepository.postListing(listing)
 
                 override suspend fun deleteListing(listingId: String) =
                     springListingRepository.deleteListing(listingId)
+
+                // getMyListings has no Spring endpoint — falls back to Firebase filter
+                // or use searchListings with sellerId when API supports it
             }
         } else {
             ListingRepository(firebaseAuth, firestore)

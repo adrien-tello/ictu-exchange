@@ -15,7 +15,6 @@ class SpringAuthRepository @Inject constructor(
     private val api: SpringAuthApi,
     private val tokenStore: TokenStore
 ) {
-
     private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
 
     private fun isValidIctuEmail(email: String) =
@@ -23,6 +22,10 @@ class SpringAuthRepository @Inject constructor(
 
     // ── Register ──────────────────────────────────────────────────────────────
 
+    /**
+     * Registers a new student. Note: Swagger RegisterRequest has no userType field.
+     * userType is set separately via PATCH /api/auth/user-type after registration.
+     */
     suspend fun signUp(
         email: String,
         password: String,
@@ -32,11 +35,20 @@ class SpringAuthRepository @Inject constructor(
     ): AppResult<User> {
         if (!isValidIctuEmail(email)) return AppResult.Error(AppError.INVALID_ICTU_EMAIL)
         return try {
-            val response = api.register(
-                RegisterRequest(email.trim(), password, displayName.trim(), studentId.trim(), userType)
+            val result = api.register(
+                RegisterRequest(
+                    email       = email.trim(),
+                    password    = password,
+                    displayName = displayName.trim(),
+                    studentId   = studentId.trim()
+                )
             )
-            tokenStore.save(response.token)
-            AppResult.Success(response.toUser())
+            tokenStore.save(result.token)
+            // Set userType after registration if provided
+            if (userType.isNotBlank()) {
+                runCatching { api.updateUserType(UpdateUserTypeRequest(userType)) }
+            }
+            AppResult.Success(result.user.toUser())
         } catch (e: Exception) {
             AppResult.Error(e.toReadableMessage(), e)
         }
@@ -47,9 +59,9 @@ class SpringAuthRepository @Inject constructor(
     suspend fun signIn(email: String, password: String): AppResult<User> {
         if (!isValidIctuEmail(email)) return AppResult.Error(AppError.INVALID_ICTU_EMAIL)
         return try {
-            val response = api.login(LoginRequest(email.trim(), password))
-            tokenStore.save(response.token)
-            AppResult.Success(response.toUser())
+            val result = api.login(LoginRequest(email.trim(), password))
+            tokenStore.save(result.token)
+            AppResult.Success(result.user.toUser())
         } catch (e: Exception) {
             AppResult.Error(e.toReadableMessage(), e)
         }
@@ -57,20 +69,49 @@ class SpringAuthRepository @Inject constructor(
 
     // ── OTP ───────────────────────────────────────────────────────────────────
 
-    suspend fun sendOtp(email: String): AppResult<String> {
+    /** POST /api/auth/verify-code — verify the 6-digit code sent to email */
+    suspend fun verifyCode(email: String, code: String): AppResult<String> {
         return try {
-            val response = api.sendOtp(OtpRequest(email.trim()))
+            val response = api.verifyCode(VerifyCodeRequest(email.trim(), code.trim()))
             AppResult.Success(response.message)
         } catch (e: Exception) {
             AppResult.Error(e.toReadableMessage(), e)
         }
     }
 
-    suspend fun verifyOtp(email: String, code: String): AppResult<Boolean> {
+    /** POST /api/auth/resend-token — resend the verification code */
+    suspend fun resendToken(email: String): AppResult<String> {
         return try {
-            val response = api.verifyOtp(OtpVerifyRequest(email.trim(), code.trim()))
-            if (response.verified) AppResult.Success(true)
-            else AppResult.Error("Invalid or expired code. Please try again.")
+            val response = api.resendToken(ResendTokenRequest(email.trim()))
+            AppResult.Success(response.message)
+        } catch (e: Exception) {
+            AppResult.Error(e.toReadableMessage(), e)
+        }
+    }
+
+    // ── Logout ────────────────────────────────────────────────────────────────
+
+    /** POST /api/auth/logout — invalidates JWT on server via Redis blacklist */
+    suspend fun logout(): AppResult<String> {
+        val token = tokenStore.get()
+            ?: return AppResult.Error("Not logged in.")
+        return try {
+            val response = api.logout("Bearer $token")
+            tokenStore.clear()
+            AppResult.Success(response.message)
+        } catch (e: Exception) {
+            tokenStore.clear() // clear locally even if server call fails
+            AppResult.Success("Logged out.")
+        }
+    }
+
+    // ── User type ─────────────────────────────────────────────────────────────
+
+    /** PATCH /api/auth/user-type — switch between SELLER and BUYER */
+    suspend fun updateUserType(userType: String): AppResult<String> {
+        return try {
+            val response = api.updateUserType(UpdateUserTypeRequest(userType))
+            AppResult.Success(response.message)
         } catch (e: Exception) {
             AppResult.Error(e.toReadableMessage(), e)
         }
@@ -79,64 +120,48 @@ class SpringAuthRepository @Inject constructor(
     // ── Session ───────────────────────────────────────────────────────────────
 
     fun signOut() = tokenStore.clear()
-
     fun isUserLoggedIn(): Boolean = tokenStore.get() != null
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Mappers ───────────────────────────────────────────────────────────────
 
-    private fun AuthResponse.toUser() = User(
-        uid             = uid,
-        email           = email,
-        displayName     = displayName,
-        studentId       = studentId,
-        userType        = userType,
-        profileImageUrl = profileImageUrl,
-        createdAt       = createdAt
+    /** AuthUser { id, email, displayName, studentId, userType } → domain User */
+    private fun AuthUser.toUser() = User(
+        uid         = id,
+        email       = email,
+        displayName = displayName,
+        studentId   = studentId,
+        userType    = userType
     )
 
-    /**
-     * Converts any exception into a user-readable message.
-     *
-     * Spring Boot returns JSON error bodies like:
-     *   { "message": "Email already registered", "status": 409 }
-     * or the standard Spring error format:
-     *   { "error": "Conflict", "message": "...", "status": 409 }
-     *
-     * We try to parse those before falling back to generic messages.
-     */
+    // ── Error handling ────────────────────────────────────────────────────────
+
     private fun Exception.toReadableMessage(): String {
         if (this is IOException) return AppError.NETWORK_ERROR
-
         if (this is HttpException) {
             val body = response()?.errorBody()?.string()
             if (!body.isNullOrBlank()) {
-                // Try to extract "message" field from Spring error JSON
                 runCatching {
-                    val adapter = moshi.adapter(Map::class.java)
-                    val map = adapter.fromJson(body)
-                    val msg = map?.get("message") as? String
-                        ?: map?.get("error") as? String
+                    @Suppress("UNCHECKED_CAST")
+                    val map = moshi.adapter(Map::class.java).fromJson(body) as? Map<String, Any>
+                    val msg = map?.get("message") as? String ?: map?.get("error") as? String
                     if (!msg.isNullOrBlank()) return msg
                 }
-                // Fallback: map HTTP status to friendly message
-                return when (code()) {
-                    400 -> "Invalid request. Please check your details."
-                    401 -> AppError.WRONG_PASSWORD
-                    403 -> "Access denied."
-                    404 -> AppError.USER_NOT_FOUND
-                    409 -> AppError.EMAIL_ALREADY_IN_USE
-                    422 -> "Validation failed. Please check your input."
-                    500, 502, 503 -> "Server error. Please try again later."
-                    else -> AppError.UNKNOWN_AUTH_ERROR
-                }
+            }
+            return when (code()) {
+                400 -> "Invalid request. Please check your details."
+                401 -> AppError.WRONG_PASSWORD
+                403 -> "Access denied."
+                404 -> AppError.USER_NOT_FOUND
+                409 -> AppError.EMAIL_ALREADY_IN_USE
+                422 -> "Validation failed. Please check your input."
+                500, 502, 503 -> "Server error. Please try again later."
+                else -> AppError.UNKNOWN_AUTH_ERROR
             }
         }
-
         return if (message?.contains("Unable to resolve", ignoreCase = true) == true ||
             message?.contains("Failed to connect", ignoreCase = true) == true ||
             message?.contains("timeout", ignoreCase = true) == true)
             AppError.NETWORK_ERROR
-        else
-            AppError.UNKNOWN_AUTH_ERROR
+        else AppError.UNKNOWN_AUTH_ERROR
     }
 }

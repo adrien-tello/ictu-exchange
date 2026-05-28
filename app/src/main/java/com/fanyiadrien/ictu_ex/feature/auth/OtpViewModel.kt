@@ -60,7 +60,7 @@ class OtpViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isVerifying = true, errorMessage = null) }
-            when (val result = springAuthRepository.verifyOtp(_uiState.value.email, code)) {
+            when (val result = springAuthRepository.verifyCode(_uiState.value.email, code)) {
                 is AppResult.Success -> {
                     _uiState.update { it.copy(isVerifying = false, isVerified = true) }
                     onSuccess()
@@ -81,7 +81,7 @@ class OtpViewModel @Inject constructor(
         if (_uiState.value.secondsLeft > 0) return
         viewModelScope.launch {
             _uiState.update { it.copy(isResending = true, errorMessage = null) }
-            when (val result = springAuthRepository.sendOtp(_uiState.value.email)) {
+            when (val result = springAuthRepository.resendToken(_uiState.value.email)) {
                 is AppResult.Success -> {
                     _uiState.update { it.copy(isResending = false, resendMessage = "Code sent!") }
                     _digits.update { List(6) { "" } }

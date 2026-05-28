@@ -93,7 +93,7 @@ class MainActivity : FragmentActivity() {
             var biometricError by remember { mutableStateOf<String?>(null) }
 
             LaunchedEffect(Unit) {
-                delay(1000) 
+                delay(1000)
                 val currentUser = auth.currentUser
                 if (currentUser != null) {
                     if (BiometricHelper.isAvailable(this@MainActivity)) {
@@ -125,16 +125,16 @@ class MainActivity : FragmentActivity() {
                         globalError != null -> {
                             GlobalErrorScreen(
                                 error = globalError!!,
-                                onRetry = { 
+                                onRetry = {
                                     globalError = null
-                                    recreate() 
+                                    recreate()
                                 }
                             )
                         }
                         isLoading -> {
                             AppSplashScreen(errorMessage = biometricError) {
                                 biometricError = null
-                                recreate() 
+                                recreate()
                             }
                         }
                         else -> {
@@ -178,7 +178,7 @@ class MainActivity : FragmentActivity() {
             "message" to message,
             "timestamp" to System.currentTimeMillis()
         )
-        
+
         try {
             firestore.collection("reports").add(report)
             Toast.makeText(this, "Report Received! 🛡️ We'll look into it.", Toast.LENGTH_LONG).show()
@@ -209,9 +209,9 @@ class MainActivity : FragmentActivity() {
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 Spacer(Modifier.height(32.dp))
-                
+
                 Surface(
                     modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
                     shape = RoundedCornerShape(12.dp),
@@ -236,11 +236,11 @@ class MainActivity : FragmentActivity() {
     @Composable
     private fun ShakeReportModal(
         isSubmitting: Boolean,
-        onDismiss: () -> Unit, 
+        onDismiss: () -> Unit,
         onSubmit: (String) -> Unit
     ) {
         var reportText by remember { mutableStateOf("") }
-        
+
         Dialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(usePlatformDefaultWidth = false)
